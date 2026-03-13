@@ -1,0 +1,4 @@
+sample_id,condition,batch
+S1,Control,B1
+S2,Treated,B1
+S3,Treated,B2
