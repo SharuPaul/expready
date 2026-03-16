@@ -94,7 +94,7 @@ def build_study_summary(metadata_table: Table, config: StudyConfig) -> dict[str,
     }
 
 
-def run_preflight(config: StudyConfig) -> tuple[Report, Table]:
+def run_validation(config: StudyConfig) -> tuple[Report, Table]:
     report = Report(
         metadata={
             "metadata_path": str(config.metadata_path) if config.metadata_path else None,
@@ -145,5 +145,5 @@ def run_preflight(config: StudyConfig) -> tuple[Report, Table]:
     return report, metadata_table
 
 
-def ensure_output_dir(path: Path) -> None:
+def ensure_output_directory(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True)

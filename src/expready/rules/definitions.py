@@ -85,7 +85,7 @@ RULES: dict[str, RuleDefinition] = {
         severity=Severity.INFO,
         title="Metadata checks passed",
         description="No blocking metadata schema issues were detected.",
-        rationale="Clean metadata supports reliable preflight diagnostics.",
+        rationale="Clean metadata supports reliable validation diagnostics.",
         suggested_fix="No action required.",
         section="metadata",
     ),

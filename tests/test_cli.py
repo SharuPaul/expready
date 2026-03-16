@@ -147,6 +147,6 @@ def test_cli_fix_without_options_prints_short_help(capsys) -> None:
     text = captured.out + captured.err
 
     assert exit_code == 0
-    assert "Fix inputs and re-validate." in text
+    assert "Fix inputs." in text
     assert "usage: expready fix [options]" in text
     assert "help:" in text

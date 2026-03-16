@@ -3,22 +3,14 @@
 `expready` is a CLI tool that checks whether study inputs are analysis-ready before downstream workflows.
 It focuses on metadata quality, design quality, and sample-ID consistency across files.
 
-## What it checks
-- Metadata quality
-  - Required columns
-  - Duplicate sample IDs
-  - Missing key values
-  - Suspicious sample ID formatting
-- Design quality
-  - At least two condition groups
-  - Low replicate groups
-  - Batch-condition confounding
-  - Pair/block completeness
-  - Group imbalance
-  - Contrast format and group existence
-- Cross-file consistency
-  - Metadata sample IDs vs matrix sample columns
-  - Metadata sample IDs vs manifest sample column
+Commands:
+- `validate`: check your inputs and create an HTML report.
+- `fix`: clean common formatting issues in metadata/manifest files.
+
+`validate` checks:
+- Metadata quality: required columns, duplicate sample IDs, missing key values, suspicious sample-ID formatting.
+- Design quality: at least two condition groups, low replicate groups, batch-condition confounding, pair/block completeness, group imbalance, and contrast format/group existence.
+- Cross-file consistency: metadata sample IDs vs matrix sample columns, and metadata sample IDs vs manifest sample column.
 
 ## Get the code
 ```bash
@@ -40,7 +32,8 @@ Expected outputs:
 - `metadata.inferred.csv`
 
 ## Input options
-- Required: at least one of `--metadata` or `--matrix`
+- `validate`: requires at least one of `--metadata` or `--matrix`
+- `fix`: requires at least one of `--metadata`, `--matrix`, or `--manifest`
 - Supported tabular file formats: `.csv`, `.tsv`, `.txt` (`.txt` is treated as tab-delimited)
 
 | Option | Purpose | Notes |
@@ -48,13 +41,13 @@ Expected outputs:
 | `--metadata FILE` | Sample sheet with one row per sample | Must include `sample_id` and your condition column (default: `condition`) |
 | `--matrix FILE` | Feature-by-sample table | Sample IDs are read from sample columns |
 | `--manifest FILE` | Sample file inventory table | Used to compare metadata sample IDs with file-level sample IDs |
-| `--sample COLUMN` | Manifest sample-ID column name | Default: `sample_id`. |
+| `--sample COLUMN` | Manifest sample-ID column name | Default: `sample_id` |
 | `--condition COLUMN` | Main analysis grouping variable | Default: `condition` |
 | `--batch COLUMN` | Technical grouping variable | Example: sequencing run or center |
 | `--pair COLUMN` | Pair/block variable | For paired or blocked designs |
 | `--covars COLS...` | Extra model columns for design checks | Provide as space-separated names |
 | `--contrast A_vs_B` | Target comparison format | Example: `Treated_vs_Control` |
-| `--report NAME` | Output report filename for `validate` | Optional; `.html` is added if omitted |
+| `--report NAME` | Output report filename | `validate` only; `.html` is added if omitted |
 
 ## Outputs
 ### `validate`
@@ -63,11 +56,11 @@ Writes:
 - `metadata.inferred.csv` (only when `--metadata` is omitted)
 
 Behavior:
-- You must provide at least one of `--metadata` or `--matrix`.
-- With `--matrix` and no `--metadata`, metadata is inferred from matrix sample columns and written to `metadata.inferred.csv`.
-- Manifest checks compare metadata `sample_id` to the manifest sample column (`--sample`, default `sample_id`).
+- Provide at least one of `--metadata` or `--matrix`.
+- If you provide only `--matrix`, expready builds metadata from matrix sample columns and saves it as `metadata.inferred.csv`.
+- If you provide `--manifest`, expready compares metadata `sample_id` values to the manifest column set by `--sample` (default `sample_id`).
 - If the manifest sample column is missing, validation returns a blocking issue (`FAIL`).
-- `validate` does not auto-map different sample-ID schemes between files.
+- `validate` expects sample IDs to match exactly across files.
 
 Examples:
 ```bash
@@ -89,9 +82,9 @@ Writes:
 
 Behavior:
 - `--metadata` is optional.
-- With `--matrix` and no `--metadata`, metadata is inferred and written to `metadata.fixed.csv`.
-- With only `--manifest`, `metadata.fixed.csv` is not created.
-- `fix` does not map between different sample-ID schemes. It performs safe cleanup only (trim spaces, standardize empty-like values, remove fully empty rows).
+- With `--matrix` and no `--metadata`, metadata is inferred and saved to `metadata.fixed.csv`.
+- With only `--manifest`, no `metadata.fixed.csv` is written.
+- `fix` does not map different sample-ID schemes. It only does safe cleanup (trim spaces, standardize empty-like values, remove fully empty rows).
 
 Examples:
 ```bash

@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from expready.models import StudyConfig
-from expready.preflight import run_preflight
+from expready.validation import run_validation
 
 
 def test_study_summary_contains_design_breakdown() -> None:
@@ -13,7 +13,7 @@ def test_study_summary_contains_design_breakdown() -> None:
         batch_column="batch",
     )
 
-    report, _ = run_preflight(config)
+    report, _ = run_validation(config)
     summary = report.metadata["study_summary"]
 
     assert summary["total_samples"] == 4

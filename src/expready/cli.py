@@ -11,7 +11,7 @@ from typing import Sequence
 from expready import __version__
 from expready.loaders import load_manifest, load_matrix, load_metadata
 from expready.models import StudyConfig, Table
-from expready.preflight import build_metadata_from_matrix, ensure_output_dir, run_preflight
+from expready.validation import build_metadata_from_matrix, ensure_output_directory, run_validation
 from expready.reports import write_html_report
 
 
@@ -302,8 +302,8 @@ def run_validate(args: argparse.Namespace) -> int:
     if not config.matrix_path and not config.manifest_path:
         print("- Mode: metadata + design checks")
 
-    ensure_output_dir(config.output_dir)
-    report, metadata_table = run_preflight(config)
+    ensure_output_directory(config.output_dir)
+    report, metadata_table = run_validation(config)
     report.metadata["provenance"] = {
         "tool_name": "Experiment-Readiness Checker",
         "tool_version": __version__,
@@ -341,7 +341,7 @@ def run_fix(args: argparse.Namespace) -> int:
     if config.manifest_path:
         print(f"- Manifest: {config.manifest_path}")
 
-    ensure_output_dir(config.output_dir)
+    ensure_output_directory(config.output_dir)
 
     fixed_metadata_path: Path | None = None
     fixed_manifest_path: Path | None = None
@@ -373,29 +373,14 @@ def run_fix(args: argparse.Namespace) -> int:
         wrote_manifest=fixed_manifest_path is not None,
     )
 
-    validate_config = StudyConfig(
-        metadata_path=fixed_metadata_path,
-        condition_column=config.condition_column,
-        output_dir=config.output_dir,
-        matrix_path=config.matrix_path,
-        manifest_path=fixed_manifest_path,
-        manifest_sample_column=config.manifest_sample_column,
-        batch_column=config.batch_column,
-        pair_column=config.pair_column,
-        contrast=config.contrast,
-        covariates=config.covariates,
-    )
-    report, _ = run_preflight(validate_config)
-
     print()
-    print(f"Status: {report.status.upper()}")
     print("Generated files:")
     if fixed_metadata_path:
         print(f"- Metadata (fixed): {fixed_metadata_path}")
     if fixed_manifest_path:
         print(f"- Manifest (fixed): {fixed_manifest_path}")
     print(f"- Fix log: {fix_log_path}")
-    return 1 if report.status == "fail" else 0
+    return 0
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -505,13 +490,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     fix_parser = subparsers.add_parser(
         "fix",
-        help="Apply safe input cleanup and re-run validation",
+        help="Apply safe input cleanup",
         usage="expready fix [options]",
-        description="Apply safe cleanup to metadata/manifest and report validation status.",
+        description="Apply safe cleanup to metadata/manifest.",
         add_help=False,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    fix_parser.short_description = "Fix inputs and re-validate."
+    fix_parser.short_description = "Fix inputs."
     fix_parser.add_argument(
         "--metadata",
         required=False,
