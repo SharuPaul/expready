@@ -122,7 +122,7 @@ RULES: dict[str, RuleDefinition] = {
         title="Manifest sample ID column is missing",
         description="The sample ID column requested for the manifest was not found.",
         rationale="Sample matching cannot be performed without the correct manifest sample ID column.",
-        suggested_fix="Provide the correct manifest sample ID column name with --sample_col.",
+        suggested_fix="Provide the correct manifest sample ID column name with --sample.",
         section="cross_file",
     ),
     "DESIGN_GROUP_001": RuleDefinition(
