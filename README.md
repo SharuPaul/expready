@@ -12,6 +12,11 @@ Commands:
 - Design quality: at least two condition groups, low replicate groups, batch-condition confounding, pair/block completeness, group imbalance, and contrast format/group existence.
 - Cross-file consistency: metadata sample IDs vs matrix sample columns, and metadata sample IDs vs manifest sample column.
 
+`fix` checks and cleans:
+- Trims leading/trailing spaces across metadata and manifest values.
+- Standardizes empty-like values (`na`, `n/a`, `null`, `none`, case-insensitive) to empty values.
+- Removes rows that are fully empty after cleanup.
+
 ## Get the code
 ```bash
 git clone https://github.com/SharuPaul/expready.git
