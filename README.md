@@ -9,6 +9,12 @@ git clone https://github.com/SharuPaul/expready.git
 cd expready
 ```
 
+SSH:
+```bash
+git clone git@github.com:SharuPaul/expready.git
+cd expready
+```
+
 ## Setup
 Create and activate a virtual environment, then install the project:
 
