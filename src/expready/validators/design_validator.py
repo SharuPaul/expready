@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
+from typing import Optional
 
 from expready.models import Issue, Table
 from expready.rules import make_issue
@@ -10,8 +11,8 @@ def _missing_requested_columns(
     table: Table,
     *,
     condition_column: str,
-    batch_column: str | None,
-    pair_column: str | None,
+    batch_column: Optional[str],
+    pair_column: Optional[str],
     covariates: list[str],
 ) -> list[Issue]:
     requested = [condition_column]
@@ -33,7 +34,7 @@ def _singleton_levels(values: list[str]) -> list[str]:
     return sorted([level for level, count in counts.items() if level != "" and count == 1])
 
 
-def _validate_contrast(contrast: str, groups: set[str]) -> Issue | None:
+def _validate_contrast(contrast: str, groups: set[str]) -> Optional[Issue]:
     normalized = contrast.strip()
     if "_vs_" not in normalized:
         return make_issue("DESIGN_CONTRAST_001", detail=f"Expected format '<A>_vs_<B>', got '{contrast}'.")
@@ -48,10 +49,10 @@ def validate_design(
     table: Table,
     *,
     condition_column: str,
-    batch_column: str | None = None,
-    pair_column: str | None = None,
-    covariates: list[str] | None = None,
-    contrast: str | None = None,
+    batch_column: Optional[str] = None,
+    pair_column: Optional[str] = None,
+    covariates: Optional[list[str]] = None,
+    contrast: Optional[str] = None,
 ) -> list[Issue]:
     issues: list[Issue] = []
     covariates = covariates or []

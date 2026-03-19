@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import shlex
 import sys
-from typing import Sequence
+from typing import Optional, Sequence
 
 from expready import __version__
 from expready.loaders import load_manifest, load_matrix, load_metadata
@@ -201,8 +201,8 @@ def _normalize_table(table: Table) -> tuple[Table, dict[str, int]]:
 def _write_change_log(
     output_path: Path,
     *,
-    metadata_stats: dict[str, int] | None,
-    manifest_stats: dict[str, int] | None,
+    metadata_stats: Optional[dict[str, int]],
+    manifest_stats: Optional[dict[str, int]],
     wrote_metadata: bool,
     wrote_manifest: bool,
 ) -> None:
@@ -234,7 +234,7 @@ def _write_change_log(
     output_path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
 
 
-def _resolve_report_path(output_dir: Path, report_name: str | None) -> Path:
+def _resolve_report_path(output_dir: Path, report_name: Optional[str]) -> Path:
     if report_name:
         name = report_name.strip()
         if not name:
@@ -313,7 +313,7 @@ def run_validate(args: argparse.Namespace) -> int:
 
     html_path = _resolve_report_path(config.output_dir, args.report_name)
     write_html_report(report, html_path)
-    inferred_metadata_path: Path | None = None
+    inferred_metadata_path: Optional[Path] = None
     if config.metadata_path is None and config.matrix_path is not None:
         inferred_metadata_path = _resolve_inferred_metadata_path(config.output_dir)
         _write_metadata_table(metadata_table, inferred_metadata_path)
@@ -343,12 +343,12 @@ def run_fix(args: argparse.Namespace) -> int:
 
     ensure_output_directory(config.output_dir)
 
-    fixed_metadata_path: Path | None = None
-    fixed_manifest_path: Path | None = None
-    metadata_stats: dict[str, int] | None = None
-    manifest_stats: dict[str, int] | None = None
+    fixed_metadata_path: Optional[Path] = None
+    fixed_manifest_path: Optional[Path] = None
+    metadata_stats: Optional[dict[str, int]] = None
+    manifest_stats: Optional[dict[str, int]] = None
 
-    metadata_table: Table | None = None
+    metadata_table: Optional[Table] = None
     if config.metadata_path:
         metadata_table = load_metadata(config.metadata_path)
     elif config.matrix_path:
@@ -571,7 +571,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: Sequence[str] | None = None) -> int:
+def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = build_parser()
     raw_argv = list(argv) if argv is not None else sys.argv[1:]
     if not raw_argv:
@@ -583,7 +583,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if len(raw_argv) == 1 and raw_argv[0] not in {"-h", "--help"}:
         command_name = raw_argv[0]
-        subparser: argparse.ArgumentParser | None = None
+        subparser: Optional[argparse.ArgumentParser] = None
         for action in parser._actions:
             if isinstance(action, argparse._SubParsersAction):
                 subparser = action.choices.get(command_name)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Optional
 
 from expready.models import Report
 
@@ -33,7 +34,7 @@ def _escape(text: str) -> str:
     )
 
 
-def write_html_report(report: Report, output_path: Path, template_dir: Path | None = None) -> None:
+def write_html_report(report: Report, output_path: Path, template_dir: Optional[Path] = None) -> None:
     counts = report.severity_counts
     section_counts = report.section_counts
     action_plan = report.action_plan()

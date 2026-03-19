@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Optional
 
 from expready.models import Issue, Severity
 
@@ -218,7 +219,7 @@ RULES: dict[str, RuleDefinition] = {
 }
 
 
-def make_issue(rule_id: str, *, detail: str | None = None) -> Issue:
+def make_issue(rule_id: str, *, detail: Optional[str] = None) -> Issue:
     rule = RULES[rule_id]
     description = rule.description if detail is None else f"{rule.description} Details: {detail}"
     return Issue(
