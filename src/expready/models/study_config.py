@@ -8,6 +8,7 @@ from typing import Optional
 @dataclass(frozen=True)
 class StudyConfig:
     metadata_path: Optional[Path]
+    metadata_sample_column: str
     condition_column: str
     output_dir: Path
     matrix_path: Optional[Path] = None

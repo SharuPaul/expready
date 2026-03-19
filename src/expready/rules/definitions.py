@@ -40,9 +40,9 @@ RULES: dict[str, RuleDefinition] = {
         rule_id="META_DUP_001",
         severity=Severity.ERROR,
         title="Duplicate sample IDs",
-        description="At least one sample_id appears more than once.",
+        description="At least one sample ID appears more than once.",
         rationale="Duplicate IDs cause ambiguous mapping between files and model rows.",
-        suggested_fix="Make every sample_id unique in metadata and related inputs.",
+        suggested_fix="Make every sample ID unique in metadata and related inputs.",
         section="metadata",
     ),
     "META_MISS_001": RuleDefinition(

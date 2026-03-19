@@ -25,3 +25,10 @@ def test_missing_required_column_is_error() -> None:
     df = load_metadata(FIXTURES / "metadata_missing_required.csv")
     issues = validate_metadata(df, condition_column="condition")
     assert any(issue.rule_id == "META_REQ_001" for issue in issues)
+
+
+def test_custom_sample_id_column_is_supported() -> None:
+    df = load_metadata(FIXTURES / "metadata_custom_sample.csv")
+    issues = validate_metadata(df, condition_column="condition", sample_id_column="sample")
+    assert any(issue.rule_id == "META_OK_001" for issue in issues)
+    assert all(issue.severity.value != "error" for issue in issues)

@@ -9,19 +9,19 @@ from expready.validators.schema_validator import validate_required_columns
 _SAMPLE_ID_PATTERN = re.compile(r"^[A-Za-z0-9._-]+$")
 
 
-def validate_metadata(table: Table, *, condition_column: str) -> list[Issue]:
+def validate_metadata(table: Table, *, condition_column: str, sample_id_column: str = "sample_id") -> list[Issue]:
     issues: list[Issue] = []
 
     if table.empty:
         issues.append(make_issue("META_EMPTY_001"))
         return issues
 
-    required_columns = ["sample_id", condition_column]
+    required_columns = [sample_id_column, condition_column]
     issues.extend(validate_required_columns(table, required_columns))
     if any(issue.rule_id == "META_REQ_001" for issue in issues):
         return issues
 
-    sample_ids = table.column_values("sample_id")
+    sample_ids = table.column_values(sample_id_column)
     duplicates = sorted({value for value in sample_ids if sample_ids.count(value) > 1})
     if duplicates:
         issues.append(make_issue("META_DUP_001", detail=f"Duplicates: {', '.join(duplicates)}."))

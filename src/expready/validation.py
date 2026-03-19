@@ -17,7 +17,7 @@ from expready.validators import (
 _REPLICATE_PATTERN = re.compile(r"^R\d+$", re.IGNORECASE)
 
 
-def _parse_sample_id(sample_id: str) -> dict[str, str]:
+def _parse_sample_id(sample_id: str, *, sample_id_column: str) -> dict[str, str]:
     parts = sample_id.split("_")
     condition = parts[0] if parts else sample_id
     replicate = ""
@@ -36,21 +36,22 @@ def _parse_sample_id(sample_id: str) -> dict[str, str]:
         dissection = parts[1]
 
     return {
-        "sample_id": sample_id,
+        sample_id_column: sample_id,
         "condition": condition,
         "dissection": dissection,
         "replicate": replicate,
     }
 
 
-def build_metadata_from_matrix(matrix_table: Table) -> Table:
+def build_metadata_from_matrix(matrix_table: Table, *, sample_id_column: str = "sample_id") -> Table:
     sample_columns = infer_sample_columns(matrix_table)
-    rows = [_parse_sample_id(sample_id) for sample_id in sample_columns]
-    return Table(columns=["sample_id", "condition", "dissection", "replicate"], rows=rows)
+    rows = [_parse_sample_id(sample_id, sample_id_column=sample_id_column) for sample_id in sample_columns]
+    return Table(columns=[sample_id_column, "condition", "dissection", "replicate"], rows=rows)
 
 
 def build_study_summary(metadata_table: Table, config: StudyConfig) -> dict[str, object]:
-    sample_ids = metadata_table.column_values("sample_id") if "sample_id" in metadata_table.columns else []
+    sample_col = config.metadata_sample_column
+    sample_ids = metadata_table.column_values(sample_col) if sample_col in metadata_table.columns else []
     duplicate_ids = sorted({sid for sid in sample_ids if sid and sample_ids.count(sid) > 1})
 
     summary_columns: list[str] = []
@@ -108,15 +109,19 @@ def run_validation(config: StudyConfig) -> tuple[Report, Table]:
     if config.metadata_path:
         metadata_table = load_metadata(config.metadata_path)
     elif matrix_table is not None:
-        metadata_table = build_metadata_from_matrix(matrix_table)
+        metadata_table = build_metadata_from_matrix(matrix_table, sample_id_column=config.metadata_sample_column)
         report.metadata["metadata_source"] = "auto_from_matrix"
     else:
-        metadata_table = Table(columns=["sample_id", config.condition_column], rows=[])
+        metadata_table = Table(columns=[config.metadata_sample_column, config.condition_column], rows=[])
         report.metadata["metadata_source"] = "missing"
 
     report.metadata["study_summary"] = build_study_summary(metadata_table, config)
 
-    for issue in validate_metadata(metadata_table, condition_column=config.condition_column):
+    for issue in validate_metadata(
+        metadata_table,
+        condition_column=config.condition_column,
+        sample_id_column=config.metadata_sample_column,
+    ):
         report.add_issue(issue)
 
     for issue in validate_design(
@@ -130,7 +135,11 @@ def run_validation(config: StudyConfig) -> tuple[Report, Table]:
         report.add_issue(issue)
 
     if matrix_table is not None:
-        for issue in validate_metadata_vs_matrix(metadata_table, matrix_table):
+        for issue in validate_metadata_vs_matrix(
+            metadata_table,
+            matrix_table,
+            sample_id_column=config.metadata_sample_column,
+        ):
             report.add_issue(issue)
 
     if config.manifest_path:
@@ -138,6 +147,7 @@ def run_validation(config: StudyConfig) -> tuple[Report, Table]:
         for issue in validate_metadata_vs_manifest(
             metadata_table,
             manifest_table,
+            metadata_sample_column=config.metadata_sample_column,
             manifest_sample_column=config.manifest_sample_column,
         ):
             report.add_issue(issue)

@@ -52,20 +52,20 @@ All input files must include a header row (column names in the first row). Heade
 `metadata` file (`--metadata`):
 - One row per sample.
 - Required columns:
-  - `sample_id`
+  - Metadata sample-ID column (default `sample_id`, or the column passed via `--meta-id`)
   - Condition column (default `condition`, or the column passed via `--condition`)
 - If you pass `--batch`, `--pair`, or `--covars`, those columns must exist in metadata.
-- `sample_id` values should be unique and non-empty.
+- Metadata sample-ID values should be unique and non-empty.
 
 `matrix` file (`--matrix`):
 - Feature-by-sample table (rows = features, sample IDs in columns).
-- Sample column names should match metadata `sample_id` values exactly when both files are used.
+- Sample column names should match metadata sample-ID values exactly when both files are used.
 - If metadata is not provided, `expready` infers metadata from matrix sample columns.
 
 `manifest` file (`--manifest`):
 - Sample inventory table (for example, sample ID + file path columns).
 - Must contain the sample-ID column specified by `--sample` (default `sample_id`).
-- Sample IDs in this column should match metadata `sample_id` values exactly.
+- Sample IDs in this column should match metadata sample-ID values exactly.
 
 Minimal examples:
 
@@ -119,9 +119,10 @@ Expected:
 
 | Option | Purpose | Notes |
 |---|---|---|
-| `--metadata FILE` | Sample sheet with one row per sample | Must include `sample_id` and your condition column (default: `condition`) |
+| `--metadata FILE` | Sample sheet with one row per sample | Must include your metadata sample-ID column (`--meta-id`) and condition column (`--condition`) |
 | `--matrix FILE` | Feature-by-sample table | Sample IDs are read from sample columns |
 | `--manifest FILE` | Sample file inventory table | Used to compare metadata sample IDs with file-level sample IDs |
+| `--meta-id COLUMN` | Metadata sample-ID column name | Default: `sample_id` |
 | `--sample COLUMN` | Manifest sample-ID column name | Default: `sample_id` |
 | `--condition COLUMN` | Main analysis grouping variable | Default: `condition` |
 | `--batch COLUMN` | Technical grouping variable | Example: sequencing run or center |
@@ -139,7 +140,7 @@ Writes:
 Behavior:
 - Provide at least one of `--metadata` or `--matrix`.
 - If you provide only `--matrix`, expready builds metadata from matrix sample columns and saves it as `metadata.inferred.csv`.
-- If you provide `--manifest`, expready compares metadata `sample_id` values to the manifest column set by `--sample` (default `sample_id`).
+- If you provide `--manifest`, expready compares metadata sample-ID values (from `--meta-id`, default `sample_id`) to the manifest column set by `--sample` (default `sample_id`).
 - If the manifest sample column is missing, validation returns a blocking issue (`FAIL`).
 - `validate` expects sample IDs to match exactly across files.
 
@@ -208,8 +209,8 @@ Common report language and what it means:
 - `Some matrix sample IDs are not listed in metadata`: sample IDs exist in matrix columns but not in metadata.
 - `Some metadata sample IDs are missing in the manifest`: sample IDs exist in metadata but are not found in the manifest sample-ID column.
 - `Manifest sample-ID column was not found`: the column passed via `--sample` does not exist in manifest.
-- `Duplicate sample IDs`: the same `sample_id` appears in more than one metadata row.
-- `Required metadata fields are empty`: required columns (like `sample_id` or condition) contain missing values.
+- `Duplicate sample IDs`: the same metadata sample-ID value appears in more than one metadata row.
+- `Required metadata fields are empty`: required columns (like metadata sample ID or condition) contain missing values.
 - `Some condition groups have too few replicates`: at least one condition group has fewer than 2 samples.
 - `Condition and batch are fully linked`: condition and batch are one-to-one, so their effects cannot be separated.
 - `A category value appears only once`: a value in condition, batch, or covariates appears for only one sample.

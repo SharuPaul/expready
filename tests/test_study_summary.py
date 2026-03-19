@@ -8,6 +8,7 @@ def test_study_summary_contains_design_breakdown() -> None:
     fixture_dir = Path(__file__).parent / "fixtures"
     config = StudyConfig(
         metadata_path=fixture_dir / "metadata_valid.csv",
+        metadata_sample_column="sample_id",
         condition_column="condition",
         output_dir=Path("tests/.tmp/summary_out"),
         batch_column="batch",

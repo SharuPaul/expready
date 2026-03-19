@@ -75,6 +75,32 @@ def test_cli_supports_manifest(capsys) -> None:
     assert (out_dir / "report.html").exists()
 
 
+def test_cli_supports_custom_metadata_sample_column(capsys) -> None:
+    fixture_dir = Path(__file__).parent / "fixtures"
+    out_dir = Path("tests/.tmp/cli_out_custom_sample")
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    exit_code = main(
+        [
+            "validate",
+            "--metadata",
+            str(fixture_dir / "metadata_custom_sample.csv"),
+            "--meta-id",
+            "sample",
+            "--matrix",
+            str(fixture_dir / "matrix_valid.tsv"),
+            "--condition",
+            "condition",
+            "--output",
+            str(out_dir),
+        ]
+    )
+    _ = capsys.readouterr()
+
+    assert exit_code == 0
+    assert (out_dir / "report.html").exists()
+
+
 def test_cli_validate_auto_metadata_from_matrix(capsys) -> None:
     fixture_dir = Path(__file__).parent / "fixtures"
     out_dir = Path("tests/.tmp/cli_out_auto")

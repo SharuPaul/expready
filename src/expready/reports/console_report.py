@@ -31,7 +31,7 @@ def render_console_summary(report: Report) -> str:
     if isinstance(summary, dict):
         total = summary.get("total_samples")
         unique = summary.get("unique_sample_ids")
-        lines.append(f"Samples: {total} (unique sample_id: {unique})")
+        lines.append(f"Samples: {total} (unique sample IDs: {unique})")
         condition_stats = summary.get("condition_stats", {})
         if isinstance(condition_stats, dict) and condition_stats:
             ratio = condition_stats.get("imbalance_ratio")
@@ -43,7 +43,7 @@ def render_console_summary(report: Report) -> str:
                 )
         duplicates = summary.get("duplicate_sample_ids", [])
         if duplicates:
-            lines.append(f"Duplicate sample_id values: {', '.join(duplicates)}")
+            lines.append(f"Duplicate sample ID values: {', '.join(duplicates)}")
         columns = summary.get("columns", {})
         if isinstance(columns, dict) and columns:
             lines.append("Study breakdown:")

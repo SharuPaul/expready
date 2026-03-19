@@ -159,6 +159,7 @@ def _build_study_config(args: argparse.Namespace, *, output_required: bool) -> S
     output_path = Path(args.output) if output_required else Path(args.output) if args.output else Path(".")
     return StudyConfig(
         metadata_path=Path(args.metadata) if args.metadata else None,
+        metadata_sample_column=args.metadata_sample,
         condition_column=args.condition,
         output_dir=output_path,
         matrix_path=Path(args.matrix) if args.matrix else None,
@@ -418,6 +419,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="Metadata table path (.csv or .tsv). If omitted, metadata is inferred from --matrix sample names.",
     )
     validate_parser.add_argument(
+        "--meta-id",
+        dest="metadata_sample",
+        default="sample_id",
+        metavar="COLUMN",
+        help="Metadata column containing sample IDs (default: sample_id).",
+    )
+    validate_parser.add_argument(
         "--condition",
         required=False,
         default="condition",
@@ -503,6 +511,13 @@ def build_parser() -> argparse.ArgumentParser:
         type=_existing_file,
         metavar="FILE",
         help="Metadata table path (.csv or .tsv).",
+    )
+    fix_parser.add_argument(
+        "--meta-id",
+        dest="metadata_sample",
+        default="sample_id",
+        metavar="COLUMN",
+        help="Metadata column containing sample IDs (default: sample_id).",
     )
     fix_parser.add_argument(
         "--condition",
