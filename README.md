@@ -45,6 +45,55 @@ pip install -e .
 - Standardizes empty-like values (`na`, `n/a`, `null`, `none`, case-insensitive) to empty values.
 - Removes rows that are fully empty after cleanup.
 
+## Input file requirements
+Supported formats for all inputs: `.csv`, `.tsv`, `.txt` (`.txt` is treated as tab-delimited).
+All input files must include a header row (column names in the first row). Headerless files are not supported.
+
+`metadata` file (`--metadata`):
+- One row per sample.
+- Required columns:
+  - `sample_id`
+  - Condition column (default `condition`, or the column passed via `--condition`)
+- If you pass `--batch`, `--pair`, or `--covars`, those columns must exist in metadata.
+- `sample_id` values should be unique and non-empty.
+
+`matrix` file (`--matrix`):
+- Feature-by-sample table (rows = features, sample IDs in columns).
+- Sample column names should match metadata `sample_id` values exactly when both files are used.
+- If metadata is not provided, `expready` infers metadata from matrix sample columns.
+
+`manifest` file (`--manifest`):
+- Sample inventory table (for example, sample ID + file path columns).
+- Must contain the sample-ID column specified by `--sample` (default `sample_id`).
+- Sample IDs in this column should match metadata `sample_id` values exactly.
+
+Minimal examples:
+
+Metadata (`metadata.csv`)
+```csv
+sample_id,condition,batch
+S1,Control,B1
+S2,Control,B1
+S3,Treated,B2
+S4,Treated,B2
+```
+
+Matrix (`matrix.tsv`)
+```tsv
+gene_id	S1	S2	S3	S4
+GeneA	10	12	4	6
+GeneB	0	1	8	9
+```
+
+Manifest (`manifest.tsv`)
+```tsv
+sample_id	file_path
+S1	/data/S1.fastq.gz
+S2	/data/S2.fastq.gz
+S3	/data/S3.fastq.gz
+S4	/data/S4.fastq.gz
+```
+
 ## Test runs
 Pass example (metadata + matrix):
 ```bash
@@ -130,14 +179,41 @@ expready fix --matrix counts.tsv --output reports/fix_from_matrix
 expready fix --manifest manifest.tsv --output reports/fix_manifest_only
 ```
 
-## Status and severity
-- Overall status
-  - `PASS`: no blocking issues found
-  - `FAIL`: one or more blocking issues found
-- Issue levels
-  - `Extreme`: blocking
-  - `Moderate`: important, non-blocking
-  - `None`: informational
+## Understanding outputs and issues
+What each output file means:
+- `report.html`: main validation report with status, issue list, and suggested fixes.
+- `metadata.inferred.csv`: metadata generated from matrix sample columns (only when metadata input is omitted).
+- `metadata.fixed.csv`: cleaned metadata written by `fix`.
+- `manifest.fixed.csv`: cleaned manifest written by `fix`.
+- `fix.log`: summary of what `fix` changed (empty-like values standardized, fully empty rows removed).
+
+How to read validation status:
+- `PASS`: no blocking issues were found.
+- `FAIL`: at least one blocking issue was found.
+
+How to prioritize issues in `report.html`:
+- `Extreme`: blocking issue; fix these first.
+- `Moderate`: non-blocking but important quality risk.
+- `None`: informational check passed/no action required.
+
+Issue sections:
+- `Metadata`: schema and sample-ID quality checks.
+- `Design`: group structure and model-readiness checks.
+- `Cross-file`: sample-ID consistency across metadata, matrix, and manifest.
+
+## Report wording guide
+Common report language and what it means:
+- `Blocking issue`: an issue severe enough to set overall status to `FAIL`.
+- `Some metadata sample IDs are missing in the matrix`: sample IDs exist in metadata but are not found in matrix sample columns.
+- `Some matrix sample IDs are not listed in metadata`: sample IDs exist in matrix columns but not in metadata.
+- `Some metadata sample IDs are missing in the manifest`: sample IDs exist in metadata but are not found in the manifest sample-ID column.
+- `Manifest sample-ID column was not found`: the column passed via `--sample` does not exist in manifest.
+- `Duplicate sample IDs`: the same `sample_id` appears in more than one metadata row.
+- `Required metadata fields are empty`: required columns (like `sample_id` or condition) contain missing values.
+- `Some condition groups have too few replicates`: at least one condition group has fewer than 2 samples.
+- `Condition and batch are fully linked`: condition and batch are one-to-one, so their effects cannot be separated.
+- `A category value appears only once`: a value in condition, batch, or covariates appears for only one sample.
+- `Model setup is too complex for the sample count`: estimated model terms are too many for available samples.
 
 ## Help
 ```bash
