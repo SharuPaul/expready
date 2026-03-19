@@ -164,7 +164,7 @@ def _build_study_config(args: argparse.Namespace, *, output_required: bool) -> S
         output_dir=output_path,
         matrix_path=Path(args.matrix) if args.matrix else None,
         manifest_path=Path(args.manifest) if args.manifest else None,
-        manifest_sample_column=args.sample,
+        manifest_sample_column=args.manifest_sample,
         batch_column=args.batch,
         pair_column=args.pair,
         contrast=args.contrast,
@@ -429,7 +429,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Metadata table path (.csv or .tsv). If omitted, metadata is inferred from --matrix sample names.",
     )
     validate_parser.add_argument(
-        "--meta-id",
+        "--metadata-id",
         dest="metadata_sample",
         default="sample_id",
         metavar="COLUMN",
@@ -471,8 +471,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional manifest file (.csv/.tsv) for sample-to-file consistency checks.",
     )
     validate_parser.add_argument(
-        "--sample",
-        dest="sample",
+        "--manifest-id",
+        dest="manifest_sample",
         default="sample_id",
         metavar="COLUMN",
         help="Manifest column containing sample IDs (default: sample_id).",
@@ -523,7 +523,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Metadata table path (.csv or .tsv).",
     )
     fix_parser.add_argument(
-        "--meta-id",
+        "--metadata-id",
         dest="metadata_sample",
         default="sample_id",
         metavar="COLUMN",
@@ -557,8 +557,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional manifest file (.csv/.tsv).",
     )
     fix_parser.add_argument(
-        "--sample",
-        dest="sample",
+        "--manifest-id",
+        dest="manifest_sample",
         default="sample_id",
         metavar="COLUMN",
         help="Manifest column containing sample IDs (default: sample_id).",

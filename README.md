@@ -53,7 +53,7 @@ All input files must include a header row (column names in the first row). Heade
 `metadata` file (`--metadata`):
 - One row per sample.
 - Required columns:
-  - Metadata sample-ID column (default `sample_id`, or the column passed via `--meta-id`)
+  - Metadata sample-ID column (default `sample_id`, or the column passed via `--metadata-id`)
   - Condition column (default `condition`, or the column passed via `--condition`)
 - If you pass `--batch`, `--pair`, or `--covars`, those columns must exist in metadata.
 - Metadata sample-ID values should be unique and non-empty.
@@ -65,7 +65,7 @@ All input files must include a header row (column names in the first row). Heade
 
 `manifest` file (`--manifest`):
 - Sample inventory table (for example, sample ID + file path columns).
-- Must contain the sample-ID column specified by `--sample` (default `sample_id`).
+- Must contain the sample-ID column specified by `--manifest-id` (default `sample_id`).
 - Sample IDs in this column should match metadata sample-ID values exactly.
 
 Minimal examples:
@@ -120,11 +120,11 @@ Expected:
 
 | Option | Purpose | Notes |
 |---|---|---|
-| `--metadata FILE` | Sample sheet with one row per sample | Must include your metadata sample-ID column (`--meta-id`) and condition column (`--condition`) |
+| `--metadata FILE` | Sample sheet with one row per sample | Must include your metadata sample-ID column (`--metadata-id`) and condition column (`--condition`) |
 | `--matrix FILE` | Feature-by-sample table | Sample IDs are read from sample columns |
 | `--manifest FILE` | Sample file inventory table | Used to compare metadata sample IDs with file-level sample IDs |
-| `--meta-id COLUMN` | Column name in metadata that contains sample IDs | Default: `sample_id` |
-| `--sample COLUMN` | Column name in manifest that contains sample IDs | Default: `sample_id` |
+| `--metadata-id COLUMN` | Column name in metadata that contains sample IDs | Default: `sample_id` |
+| `--manifest-id COLUMN` | Column name in manifest that contains sample IDs | Default: `sample_id` |
 | `--condition COLUMN` | Main analysis grouping variable | Default: `condition` |
 | `--batch COLUMN` | Technical grouping variable | Example: sequencing run or center |
 | `--pair COLUMN` | Pair/block variable | For paired or blocked designs |
@@ -142,8 +142,8 @@ Writes:
 Behavior:
 - Provide at least one of `--metadata` or `--matrix`.
 - If you provide only `--matrix`, expready builds metadata from matrix sample columns and saves it as `metadata.inferred.csv`.
-- If you provide `--manifest`, expready compares metadata sample-ID values (from `--meta-id`, default `sample_id`) to the manifest column set by `--sample` (default `sample_id`).
-- `--meta-id` is for metadata; `--sample` is for manifest.
+- If you provide `--manifest`, expready compares metadata sample-ID values (from `--metadata-id`, default `sample_id`) to the manifest column set by `--manifest-id` (default `sample_id`).
+- `--metadata-id` is for metadata; `--manifest-id` is for manifest.
 - If the manifest sample column is missing, validation returns a blocking issue (`FAIL`).
 - `validate` expects sample IDs to match exactly across files.
 
@@ -156,7 +156,7 @@ expready validate --matrix counts.tsv --output reports/validate_matrix_only
 expready validate --metadata metadata.csv --matrix counts.tsv --output reports/validate_meta_matrix
 
 # metadata + manifest validation (manifest column is named "rownames")
-expready validate --metadata metadata.csv --manifest manifest.tsv --sample rownames --output reports/validate_meta_manifest
+expready validate --metadata metadata.csv --manifest manifest.tsv --manifest-id rownames --output reports/validate_meta_manifest
 ```
 
 ### `fix`
@@ -215,7 +215,7 @@ Common report language and what it means:
 - `Some metadata sample IDs are missing in the matrix`: sample IDs exist in metadata but are not found in matrix sample columns.
 - `Some matrix sample IDs are not listed in metadata`: sample IDs exist in matrix columns but not in metadata.
 - `Some metadata sample IDs are missing in the manifest`: sample IDs exist in metadata but are not found in the manifest sample-ID column.
-- `Manifest sample-ID column was not found`: the column passed via `--sample` does not exist in manifest.
+- `Manifest sample-ID column was not found`: the column passed via `--manifest-id` does not exist in manifest.
 - `Input file appears to have inconsistent delimiters`: rows do not have a consistent column structure (often caused by mixed tabs/spaces/commas). The report will suggest standardizing delimiters or running `expready fix` and then re-running `validate`.
 - `Duplicate sample IDs`: the same metadata sample-ID value appears in more than one metadata row.
 - `Required metadata fields are empty`: required columns (like metadata sample ID or condition) contain missing values.

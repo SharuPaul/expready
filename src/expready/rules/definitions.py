@@ -121,9 +121,9 @@ RULES: dict[str, RuleDefinition] = {
         rule_id="CROSS_MANIFEST_003",
         severity=Severity.ERROR,
         title="Manifest sample-ID column was not found",
-        description="The manifest does not contain the sample-ID column requested with --sample.",
+        description="The manifest does not contain the sample-ID column requested with --manifest-id.",
         rationale="Sample matching cannot be performed without the correct manifest sample ID column.",
-        suggested_fix="Provide the correct manifest sample ID column name with --sample.",
+        suggested_fix="Provide the correct manifest sample ID column name with --manifest-id.",
         section="cross_file",
     ),
     "DESIGN_GROUP_001": RuleDefinition(

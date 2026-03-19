@@ -85,7 +85,7 @@ def test_cli_supports_custom_metadata_sample_column(capsys) -> None:
             "validate",
             "--metadata",
             str(fixture_dir / "metadata_custom_sample.csv"),
-            "--meta-id",
+            "--metadata-id",
             "sample",
             "--matrix",
             str(fixture_dir / "matrix_valid.tsv"),
