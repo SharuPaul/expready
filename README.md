@@ -3,7 +3,29 @@
 `expready` is a CLI tool that checks whether study inputs are analysis-ready before downstream workflows.
 It focuses on metadata quality, design quality, and sample-ID consistency across files.
 
-Commands:
+## Get the code
+```bash
+git clone https://github.com/SharuPaul/expready.git
+cd expready
+```
+
+## Setup
+Create and activate a virtual environment, then install the project:
+
+```bash
+python -m venv expread_venv
+source expread_venv/bin/activate
+pip install -e .
+```
+
+Windows PowerShell:
+```powershell
+python -m venv expread_venv
+.\expread_venv\Scripts\Activate.ps1
+pip install -e .
+```
+
+## Commands
 - `validate`: check your inputs and create an HTML report.
 - `fix`: clean common formatting issues in metadata/manifest files.
 
@@ -16,16 +38,6 @@ Commands:
 - Trims leading/trailing spaces across metadata and manifest values.
 - Standardizes empty-like values (`na`, `n/a`, `null`, `none`, case-insensitive) to empty values.
 - Removes rows that are fully empty after cleanup.
-
-## Get the code
-```bash
-git clone https://github.com/SharuPaul/expready.git
-cd expready
-```
-
-## Commands
-- `validate`: run checks and generate an HTML report
-- `fix`: apply safe cleanup to metadata/manifest and write fixed files + log
 
 ## Test run
 ```bash
