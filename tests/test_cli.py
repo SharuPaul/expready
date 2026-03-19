@@ -172,6 +172,50 @@ def test_cli_fix_can_write_csv_outputs(capsys) -> None:
     assert (out_dir / "fix.log").exists()
 
 
+def test_cli_fix_normalizes_header_spaces_to_underscores(capsys) -> None:
+    fixture_dir = Path(__file__).parent / "fixtures"
+    out_dir = Path("tests/.tmp/cli_fix_out_header_norm")
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    exit_code = main(
+        [
+            "fix",
+            "--metadata",
+            str(fixture_dir / "metadata_space_header.csv"),
+            "--output",
+            str(out_dir),
+        ]
+    )
+    _ = capsys.readouterr()
+
+    assert exit_code == 0
+    fixed_path = out_dir / "metadata.fixed.tsv"
+    assert fixed_path.exists()
+    header = fixed_path.read_text(encoding="utf-8").splitlines()[0]
+    assert header == "sample_id\tcondition\tbatch_id"
+
+
+def test_cli_fix_skips_header_space_normalization_for_space_delimited_input(capsys) -> None:
+    fixture_dir = Path(__file__).parent / "fixtures"
+    out_dir = Path("tests/.tmp/cli_fix_out_space_delimited")
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    exit_code = main(
+        [
+            "fix",
+            "--metadata",
+            str(fixture_dir / "metadata_space_delimited.txt"),
+            "--output",
+            str(out_dir),
+        ]
+    )
+    _ = capsys.readouterr()
+
+    assert exit_code == 0
+    fix_log = (out_dir / "fix.log").read_text(encoding="utf-8")
+    assert "Header-space normalization skipped: yes (space-delimited input)" in fix_log
+
+
 def test_cli_no_command_prints_short_help(capsys) -> None:
     exit_code = main([])
     captured = capsys.readouterr()

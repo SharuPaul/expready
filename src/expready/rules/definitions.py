@@ -225,6 +225,15 @@ RULES: dict[str, RuleDefinition] = {
         suggested_fix="Standardize delimiters in the input file, or run expready fix on the file and re-run validate.",
         section="general",
     ),
+    "INPUT_HEADER_001": RuleDefinition(
+        rule_id="INPUT_HEADER_001",
+        severity=Severity.WARNING,
+        title="Header names contain spaces",
+        description="One or more header names contain spaces.",
+        rationale="Headers with spaces can cause parsing or downstream compatibility problems in some tools.",
+        suggested_fix="Run expready fix to normalize header names (spaces -> underscores), or rename headers manually.",
+        section="general",
+    ),
 }
 
 

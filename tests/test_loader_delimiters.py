@@ -13,3 +13,12 @@ def test_matrix_loader_handles_mixed_whitespace_delimiters() -> None:
 
     issues = validate_metadata_vs_matrix(metadata_table, matrix_table)
     assert any(issue.rule_id == "CROSS_OK_001" for issue in issues)
+
+
+def test_matrix_loader_keeps_otu_id_header_with_tabs() -> None:
+    metadata_table = load_metadata(FIXTURES / "metadata_valid.csv")
+    matrix_table = load_matrix(FIXTURES / "matrix_otu_header.tsv")
+
+    assert "#OTU ID" in matrix_table.columns
+    issues = validate_metadata_vs_matrix(metadata_table, matrix_table)
+    assert any(issue.rule_id == "CROSS_OK_001" for issue in issues)

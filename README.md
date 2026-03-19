@@ -44,6 +44,8 @@ pip install -e .
 - Trims leading/trailing spaces across metadata and manifest values.
 - Standardizes empty-like values (`na`, `n/a`, `null`, `none`, case-insensitive) to empty values.
 - Removes rows that are fully empty after cleanup.
+- Normalizes header names by replacing internal spaces with underscores (example: `#OTU ID` -> `#OTU_ID`) when input is not space-delimited.
+- For truly space-delimited input, header-space normalization is skipped to avoid ambiguous header splitting.
 
 ## Input file requirements
 Supported formats for all inputs: `.csv`, `.tsv`, `.txt`.
@@ -62,6 +64,7 @@ All input files must include a header row (column names in the first row). Heade
 - Feature-by-sample table (rows = features, sample IDs in columns).
 - Sample column names should match metadata sample-ID values exactly when both files are used.
 - If metadata is not provided, `expready` infers metadata from matrix sample columns.
+- Common annotation headers such as `gene_id`, `feature_id`, or `#OTU ID` are supported as non-sample columns.
 
 `manifest` file (`--manifest`):
 - Sample inventory table (for example, sample ID + file path columns).
@@ -193,7 +196,7 @@ What each output file means:
 - `metadata.inferred.csv`: metadata generated from matrix sample columns (only when metadata input is omitted).
 - `metadata.fixed.<fmt>`: cleaned metadata written by `fix` (`fmt` is `tsv` by default, or `csv` if selected).
 - `manifest.fixed.<fmt>`: cleaned manifest written by `fix` (`fmt` is `tsv` by default, or `csv` if selected).
-- `fix.log`: summary of what `fix` changed (empty-like values standardized, fully empty rows removed).
+- `fix.log`: summary of what `fix` changed (empty-like values standardized, fully empty rows removed, headers normalized/skipped).
 
 How to read validation status:
 - `PASS`: no blocking issues were found.
@@ -216,6 +219,7 @@ Common report language and what it means:
 - `Some matrix sample IDs are not listed in metadata`: sample IDs exist in matrix columns but not in metadata.
 - `Some metadata sample IDs are missing in the manifest`: sample IDs exist in metadata but are not found in the manifest sample-ID column.
 - `Manifest sample-ID column was not found`: the column passed via `--manifest-id` does not exist in manifest.
+- `Header names contain spaces`: non-blocking warning; run `fix` to normalize headers with underscores.
 - `Input file appears to have inconsistent delimiters`: rows do not have a consistent column structure (often caused by mixed tabs/spaces/commas). The report will suggest standardizing delimiters or running `expready fix` and then re-running `validate`.
 - `Duplicate sample IDs`: the same metadata sample-ID value appears in more than one metadata row.
 - `Required metadata fields are empty`: required columns (like metadata sample ID or condition) contain missing values.

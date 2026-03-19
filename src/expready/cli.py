@@ -4,12 +4,13 @@ import argparse
 import csv
 from datetime import datetime, timezone
 from pathlib import Path
+import re
 import shlex
 import sys
 from typing import Optional, Sequence
 
 from expready import __version__
-from expready.loaders import load_manifest, load_matrix, load_metadata
+from expready.loaders import detect_delimiter_mode, load_manifest, load_matrix, load_metadata
 from expready.models import StudyConfig, Table
 from expready.validation import build_metadata_from_matrix, ensure_output_directory, run_validation
 from expready.reports import write_html_report
@@ -172,8 +173,40 @@ def _build_study_config(args: argparse.Namespace, *, output_required: bool) -> S
     )
 
 
-def _normalize_table(table: Table) -> tuple[Table, dict[str, int]]:
+def _normalize_column_names(
+    columns: list[str], *, replace_internal_spaces: bool
+) -> tuple[list[str], dict[str, str], int]:
+    normalized_columns: list[str] = []
+    mapping: dict[str, str] = {}
+    renamed_count = 0
+    used: dict[str, int] = {}
+
+    for column in columns:
+        base = column.strip()
+        if replace_internal_spaces:
+            base = re.sub(r"\s+", "_", base)
+        if base == "":
+            base = "column"
+        candidate = base
+        index = 2
+        while candidate in used:
+            candidate = f"{base}_{index}"
+            index += 1
+        used[candidate] = 1
+        mapping[column] = candidate
+        normalized_columns.append(candidate)
+        if candidate != column:
+            renamed_count += 1
+
+    return normalized_columns, mapping, renamed_count
+
+
+def _normalize_table(table: Table, *, normalize_header_spaces: bool) -> tuple[Table, dict[str, int]]:
     empty_tokens = {"na", "n/a", "null", "none"}
+    normalized_columns, column_map, renamed_columns = _normalize_column_names(
+        table.columns,
+        replace_internal_spaces=normalize_header_spaces,
+    )
     normalized_rows: list[dict[str, str]] = []
     normalized_empty_values = 0
     removed_empty_rows = 0
@@ -183,19 +216,22 @@ def _normalize_table(table: Table) -> tuple[Table, dict[str, int]]:
         for column in table.columns:
             raw_value = str(row.get(column, "") if row.get(column, "") is not None else "").strip()
             lowered = raw_value.lower()
+            normalized_column = column_map[column]
             if lowered in empty_tokens:
-                normalized_row[column] = ""
+                normalized_row[normalized_column] = ""
                 normalized_empty_values += 1
             else:
-                normalized_row[column] = raw_value
+                normalized_row[normalized_column] = raw_value
         if any(value != "" for value in normalized_row.values()):
             normalized_rows.append(normalized_row)
         else:
             removed_empty_rows += 1
 
-    return Table(columns=table.columns, rows=normalized_rows), {
+    return Table(columns=normalized_columns, rows=normalized_rows), {
         "normalized_empty_values": normalized_empty_values,
         "removed_empty_rows": removed_empty_rows,
+        "renamed_columns": renamed_columns,
+        "header_space_normalization_skipped": 0 if normalize_header_spaces else 1,
     }
 
 
@@ -220,6 +256,9 @@ def _write_change_log(
                 "Metadata changes:",
                 f"- Empty-like values standardized: {metadata_stats['normalized_empty_values']}",
                 f"- Fully empty rows removed: {metadata_stats['removed_empty_rows']}",
+                f"- Header names normalized: {metadata_stats['renamed_columns']}",
+                "- Header-space normalization skipped: "
+                f"{'yes (space-delimited input)' if metadata_stats['header_space_normalization_skipped'] else 'no'}",
                 "",
             ]
         )
@@ -229,6 +268,9 @@ def _write_change_log(
                 "Manifest changes:",
                 f"- Empty-like values standardized: {manifest_stats['normalized_empty_values']}",
                 f"- Fully empty rows removed: {manifest_stats['removed_empty_rows']}",
+                f"- Header names normalized: {manifest_stats['renamed_columns']}",
+                "- Header-space normalization skipped: "
+                f"{'yes (space-delimited input)' if manifest_stats['header_space_normalization_skipped'] else 'no'}",
                 "",
             ]
         )
@@ -356,12 +398,17 @@ def run_fix(args: argparse.Namespace) -> int:
     manifest_stats: Optional[dict[str, int]] = None
 
     metadata_table: Optional[Table] = None
+    normalize_metadata_headers = True
     if config.metadata_path:
         metadata_table = load_metadata(config.metadata_path)
+        normalize_metadata_headers = detect_delimiter_mode(config.metadata_path) != "whitespace"
     elif config.matrix_path:
         metadata_table = build_metadata_from_matrix(load_matrix(config.matrix_path))
     if metadata_table is not None:
-        metadata_fixed, metadata_stats = _normalize_table(metadata_table)
+        metadata_fixed, metadata_stats = _normalize_table(
+            metadata_table,
+            normalize_header_spaces=normalize_metadata_headers,
+        )
         fixed_metadata_path = _resolve_path_with_suffix(
             config.output_dir, _fixed_table_basename("metadata", args.format)
         )
@@ -369,7 +416,11 @@ def run_fix(args: argparse.Namespace) -> int:
 
     if config.manifest_path:
         manifest_table = load_manifest(config.manifest_path)
-        manifest_fixed, manifest_stats = _normalize_table(manifest_table)
+        normalize_manifest_headers = detect_delimiter_mode(config.manifest_path) != "whitespace"
+        manifest_fixed, manifest_stats = _normalize_table(
+            manifest_table,
+            normalize_header_spaces=normalize_manifest_headers,
+        )
         fixed_manifest_path = _resolve_path_with_suffix(
             config.output_dir, _fixed_table_basename("manifest", args.format)
         )

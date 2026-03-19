@@ -120,6 +120,7 @@ def run_validation(config: StudyConfig) -> tuple[Report, Table]:
             report.add_issue(make_issue("INPUT_DELIM_001", detail=f"{label} file '{path}': {detail}"))
 
     matrix_table = load_matrix(config.matrix_path) if config.matrix_path else None
+    manifest_table = load_manifest(config.manifest_path) if config.manifest_path else None
     if config.metadata_path:
         metadata_table = load_metadata(config.metadata_path)
     elif matrix_table is not None:
@@ -128,6 +129,24 @@ def run_validation(config: StudyConfig) -> tuple[Report, Table]:
     else:
         metadata_table = Table(columns=[config.metadata_sample_column, config.condition_column], rows=[])
         report.metadata["metadata_source"] = "missing"
+
+    header_checks: list[tuple[str, Optional[Table]]] = [
+        ("metadata", metadata_table if config.metadata_path else None),
+        ("matrix", matrix_table),
+        ("manifest", manifest_table),
+    ]
+    for label, table in header_checks:
+        if table is None:
+            continue
+        spaced = [column for column in table.columns if " " in column]
+        if spaced:
+            preview = ", ".join(spaced[:5])
+            report.add_issue(
+                make_issue(
+                    "INPUT_HEADER_001",
+                    detail=f"{label} headers with spaces: {preview}.",
+                )
+            )
 
     report.metadata["study_summary"] = build_study_summary(metadata_table, config)
 
@@ -156,8 +175,7 @@ def run_validation(config: StudyConfig) -> tuple[Report, Table]:
         ):
             report.add_issue(issue)
 
-    if config.manifest_path:
-        manifest_table = load_manifest(config.manifest_path)
+    if manifest_table is not None:
         for issue in validate_metadata_vs_manifest(
             metadata_table,
             manifest_table,

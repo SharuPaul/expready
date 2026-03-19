@@ -31,7 +31,10 @@ def _score_mode(lines: list[str], mode: str) -> tuple[int, int]:
     consistent = sum(1 for count in counts if count == max_count)
     if max_count <= 1:
         return (0, 0)
-    return (max_count, consistent)
+    # Prefer delimiter modes that are consistent across more rows.
+    # This avoids picking whitespace splitting when only the header has
+    # an internal space (for example: "#OTU ID").
+    return (consistent, max_count)
 
 
 def _detect_mode(lines: list[str]) -> str:
@@ -97,3 +100,11 @@ def inspect_delimiter_issues(path: Path) -> Optional[str]:
         f"{len(mismatches)} row(s) have a different field count ({preview}). "
         "This often indicates mixed or inconsistent delimiters."
     )
+
+
+def detect_delimiter_mode(path: Path) -> str:
+    raw_lines = path.read_text(encoding="utf-8").splitlines()
+    lines = [line for line in raw_lines if line.strip() != ""]
+    if not lines:
+        return ","
+    return _detect_mode(lines)
