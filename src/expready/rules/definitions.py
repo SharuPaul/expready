@@ -182,7 +182,7 @@ RULES: dict[str, RuleDefinition] = {
     ),
     "DESIGN_SIZE_001": RuleDefinition(
         rule_id="DESIGN_SIZE_001",
-        severity=Severity.ERROR,
+        severity=Severity.WARNING,
         title="Model setup is too complex for the sample count",
         description="The estimated number of model terms is too high for the number of samples.",
         rationale="Overly complex models can become unstable or impossible to estimate.",
