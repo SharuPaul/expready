@@ -46,7 +46,8 @@ pip install -e .
 - Removes rows that are fully empty after cleanup.
 
 ## Input file requirements
-Supported formats for all inputs: `.csv`, `.tsv`, `.txt` (`.txt` is treated as tab-delimited).
+Supported formats for all inputs: `.csv`, `.tsv`, `.txt`.
+Delimiter handling is flexible: expready auto-detects common delimiters (comma, tab, semicolon, pipe, or whitespace-separated columns).
 All input files must include a header row (column names in the first row). Headerless files are not supported.
 
 `metadata` file (`--metadata`):
@@ -115,7 +116,7 @@ Expected:
 ## Input options
 - `validate`: requires at least one of `--metadata` or `--matrix`
 - `fix`: requires at least one of `--metadata`, `--matrix`, or `--manifest`
-- Supported tabular file formats: `.csv`, `.tsv`, `.txt` (`.txt` is treated as tab-delimited)
+- Supported tabular file formats: `.csv`, `.tsv`, `.txt` (delimiter is auto-detected)
 
 | Option | Purpose | Notes |
 |---|---|---|
@@ -209,6 +210,7 @@ Common report language and what it means:
 - `Some matrix sample IDs are not listed in metadata`: sample IDs exist in matrix columns but not in metadata.
 - `Some metadata sample IDs are missing in the manifest`: sample IDs exist in metadata but are not found in the manifest sample-ID column.
 - `Manifest sample-ID column was not found`: the column passed via `--sample` does not exist in manifest.
+- `Input file appears to have inconsistent delimiters`: rows do not have a consistent column structure (often caused by mixed tabs/spaces/commas). The report will suggest standardizing delimiters or running `expready fix` and then re-running `validate`.
 - `Duplicate sample IDs`: the same metadata sample-ID value appears in more than one metadata row.
 - `Required metadata fields are empty`: required columns (like metadata sample ID or condition) contain missing values.
 - `Some condition groups have too few replicates`: at least one condition group has fewer than 2 samples.

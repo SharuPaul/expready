@@ -216,6 +216,15 @@ RULES: dict[str, RuleDefinition] = {
         suggested_fix="No action required.",
         section="design",
     ),
+    "INPUT_DELIM_001": RuleDefinition(
+        rule_id="INPUT_DELIM_001",
+        severity=Severity.ERROR,
+        title="Input file appears to have inconsistent delimiters",
+        description="The file structure looks inconsistent across rows, which can break column parsing.",
+        rationale="Inconsistent delimiters can make sample IDs and values land in wrong columns.",
+        suggested_fix="Standardize delimiters in the input file, or run expready fix on the file and re-run validate.",
+        section="general",
+    ),
 }
 
 

@@ -3,9 +3,11 @@ from __future__ import annotations
 from collections import Counter
 from pathlib import Path
 import re
+from typing import Optional
 
-from expready.loaders import infer_sample_columns, load_manifest, load_matrix, load_metadata
+from expready.loaders import infer_sample_columns, inspect_delimiter_issues, load_manifest, load_matrix, load_metadata
 from expready.models import Report, StudyConfig, Table
+from expready.rules import make_issue
 from expready.validators import (
     validate_design,
     validate_metadata,
@@ -104,6 +106,18 @@ def run_validation(config: StudyConfig) -> tuple[Report, Table]:
             "condition_column": config.condition_column,
         }
     )
+
+    input_paths: list[tuple[str, Optional[Path]]] = [
+        ("metadata", config.metadata_path),
+        ("matrix", config.matrix_path),
+        ("manifest", config.manifest_path),
+    ]
+    for label, path in input_paths:
+        if path is None:
+            continue
+        detail = inspect_delimiter_issues(path)
+        if detail:
+            report.add_issue(make_issue("INPUT_DELIM_001", detail=f"{label} file '{path}': {detail}"))
 
     matrix_table = load_matrix(config.matrix_path) if config.matrix_path else None
     if config.metadata_path:
