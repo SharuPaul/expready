@@ -45,14 +45,23 @@ pip install -e .
 - Standardizes empty-like values (`na`, `n/a`, `null`, `none`, case-insensitive) to empty values.
 - Removes rows that are fully empty after cleanup.
 
-## Test run
+## Test runs
+Pass example (metadata + matrix):
 ```bash
-python -m expready validate --matrix examples/matrix_valid.tsv --output reports/test_run
+python -m expready validate --metadata examples/metadata_valid.csv --matrix examples/matrix_valid.tsv --output reports/test_pass
 ```
+Expected:
+- Console shows `Status: PASS`
+- Writes `reports/test_pass/report.html`
 
-Expected outputs:
-- `report.html`
-- `metadata.inferred.csv`
+Fail example (matrix only):
+```bash
+python -m expready validate --matrix examples/matrix_valid.tsv --output reports/test_fail
+```
+Expected:
+- Console may show `Status: FAIL` (this is expected for this demo path)
+- Writes `reports/test_fail/report.html`
+- Writes `reports/test_fail/metadata.inferred.csv`
 
 ## Input options
 - `validate`: requires at least one of `--metadata` or `--matrix`
