@@ -433,7 +433,7 @@ def build_parser() -> argparse.ArgumentParser:
         dest="metadata_sample",
         default="sample_id",
         metavar="COLUMN",
-        help="Metadata column containing sample IDs (default: sample_id).",
+        help="Column name in metadata that contains sample IDs (default: sample_id).",
     )
     validate_parser.add_argument(
         "--condition",
@@ -527,7 +527,7 @@ def build_parser() -> argparse.ArgumentParser:
         dest="metadata_sample",
         default="sample_id",
         metavar="COLUMN",
-        help="Metadata column containing sample IDs (default: sample_id).",
+        help="Column name in metadata that contains sample IDs (default: sample_id).",
     )
     fix_parser.add_argument(
         "--condition",

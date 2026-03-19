@@ -123,8 +123,8 @@ Expected:
 | `--metadata FILE` | Sample sheet with one row per sample | Must include your metadata sample-ID column (`--meta-id`) and condition column (`--condition`) |
 | `--matrix FILE` | Feature-by-sample table | Sample IDs are read from sample columns |
 | `--manifest FILE` | Sample file inventory table | Used to compare metadata sample IDs with file-level sample IDs |
-| `--meta-id COLUMN` | Metadata sample-ID column name | Default: `sample_id` |
-| `--sample COLUMN` | Manifest sample-ID column name | Default: `sample_id` |
+| `--meta-id COLUMN` | Column name in metadata that contains sample IDs | Default: `sample_id` |
+| `--sample COLUMN` | Column name in manifest that contains sample IDs | Default: `sample_id` |
 | `--condition COLUMN` | Main analysis grouping variable | Default: `condition` |
 | `--batch COLUMN` | Technical grouping variable | Example: sequencing run or center |
 | `--pair COLUMN` | Pair/block variable | For paired or blocked designs |
@@ -143,6 +143,7 @@ Behavior:
 - Provide at least one of `--metadata` or `--matrix`.
 - If you provide only `--matrix`, expready builds metadata from matrix sample columns and saves it as `metadata.inferred.csv`.
 - If you provide `--manifest`, expready compares metadata sample-ID values (from `--meta-id`, default `sample_id`) to the manifest column set by `--sample` (default `sample_id`).
+- `--meta-id` is for metadata; `--sample` is for manifest.
 - If the manifest sample column is missing, validation returns a blocking issue (`FAIL`).
 - `validate` expects sample IDs to match exactly across files.
 
