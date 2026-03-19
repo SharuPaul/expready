@@ -148,9 +148,9 @@ def _existing_file(path_text: str) -> str:
     return path_text
 
 
-def _write_metadata_table(table: Table, output_path: Path) -> None:
+def _write_metadata_table(table: Table, output_path: Path, *, delimiter: str = ",") -> None:
     with output_path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=table.columns)
+        writer = csv.DictWriter(handle, fieldnames=table.columns, delimiter=delimiter)
         writer.writeheader()
         writer.writerows(table.rows)
 
@@ -288,6 +288,11 @@ def _resolve_inferred_metadata_path(output_dir: Path) -> Path:
     return candidate
 
 
+def _fixed_table_basename(kind: str, output_format: str) -> str:
+    suffix = ".tsv" if output_format == "tsv" else ".csv"
+    return f"{kind}.fixed{suffix}"
+
+
 def run_validate(args: argparse.Namespace) -> int:
     config = _build_study_config(args, output_required=True)
     if config.metadata_path is None and config.matrix_path is None:
@@ -343,6 +348,7 @@ def run_fix(args: argparse.Namespace) -> int:
         print(f"- Manifest: {config.manifest_path}")
 
     ensure_output_directory(config.output_dir)
+    table_delimiter = "\t" if args.format == "tsv" else ","
 
     fixed_metadata_path: Optional[Path] = None
     fixed_manifest_path: Optional[Path] = None
@@ -356,14 +362,18 @@ def run_fix(args: argparse.Namespace) -> int:
         metadata_table = build_metadata_from_matrix(load_matrix(config.matrix_path))
     if metadata_table is not None:
         metadata_fixed, metadata_stats = _normalize_table(metadata_table)
-        fixed_metadata_path = _resolve_path_with_suffix(config.output_dir, "metadata.fixed.csv")
-        _write_metadata_table(metadata_fixed, fixed_metadata_path)
+        fixed_metadata_path = _resolve_path_with_suffix(
+            config.output_dir, _fixed_table_basename("metadata", args.format)
+        )
+        _write_metadata_table(metadata_fixed, fixed_metadata_path, delimiter=table_delimiter)
 
     if config.manifest_path:
         manifest_table = load_manifest(config.manifest_path)
         manifest_fixed, manifest_stats = _normalize_table(manifest_table)
-        fixed_manifest_path = _resolve_path_with_suffix(config.output_dir, "manifest.fixed.csv")
-        _write_metadata_table(manifest_fixed, fixed_manifest_path)
+        fixed_manifest_path = _resolve_path_with_suffix(
+            config.output_dir, _fixed_table_basename("manifest", args.format)
+        )
+        _write_metadata_table(manifest_fixed, fixed_manifest_path, delimiter=table_delimiter)
 
     fix_log_path = _resolve_path_with_suffix(config.output_dir, "fix.log")
     _write_change_log(
@@ -578,6 +588,14 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         metavar="COLS",
         help="Optional covariate columns, space-separated.",
+    )
+    fix_parser.add_argument(
+        "--format",
+        dest="format",
+        choices=["csv", "tsv"],
+        default="tsv",
+        metavar="FMT",
+        help="Fixed-table output format: csv or tsv (default: tsv).",
     )
     _add_help_flags(fix_parser)
     fix_parser.set_defaults(handler=run_fix)

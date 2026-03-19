@@ -131,6 +131,7 @@ Expected:
 | `--covars COLS...` | Extra model columns for design checks | Provide as space-separated names |
 | `--contrast A_vs_B` | Target comparison format | Example: `Treated_vs_Control` |
 | `--report NAME` | Output report filename | `validate` only; `.html` is added if omitted |
+| `--format FMT` | Fixed table output format | `fix` only; `tsv` or `csv` (default: `tsv`) |
 
 ## Outputs
 ### `validate`
@@ -159,14 +160,15 @@ expready validate --metadata metadata.csv --manifest manifest.tsv --sample rowna
 
 ### `fix`
 Writes:
-- `metadata.fixed.csv` (if `--metadata` is provided, or inferred from `--matrix`)
-- `manifest.fixed.csv` (if manifest is provided)
+- `metadata.fixed.<fmt>` (if `--metadata` is provided, or inferred from `--matrix`)
+- `manifest.fixed.<fmt>` (if manifest is provided)
 - `fix.log`
 
 Behavior:
 - `--metadata` is optional.
-- With `--matrix` and no `--metadata`, metadata is inferred and saved to `metadata.fixed.csv`.
-- With only `--manifest`, no `metadata.fixed.csv` is written.
+- With `--matrix` and no `--metadata`, metadata is inferred and saved to `metadata.fixed.<fmt>`.
+- With only `--manifest`, no `metadata.fixed.<fmt>` is written.
+- `--format` controls fixed table format and extension (`tsv` -> `.tsv`, `csv` -> `.csv`).
 - `fix` does not map different sample-ID schemes. It only does safe cleanup (trim spaces, standardize empty-like values, remove fully empty rows).
 
 Examples:
@@ -179,14 +181,17 @@ expready fix --matrix counts.tsv --output reports/fix_from_matrix
 
 # only manifest fixed + fix.log
 expready fix --manifest manifest.tsv --output reports/fix_manifest_only
+
+# optional: write fixed tables as CSV instead of the default TSV
+expready fix --metadata metadata.csv --manifest manifest.tsv --output reports/fix_csv --format csv
 ```
 
 ## Understanding outputs and issues
 What each output file means:
 - `report.html`: main validation report with status, issue list, and suggested fixes.
 - `metadata.inferred.csv`: metadata generated from matrix sample columns (only when metadata input is omitted).
-- `metadata.fixed.csv`: cleaned metadata written by `fix`.
-- `manifest.fixed.csv`: cleaned manifest written by `fix`.
+- `metadata.fixed.<fmt>`: cleaned metadata written by `fix` (`fmt` is `tsv` by default, or `csv` if selected).
+- `manifest.fixed.<fmt>`: cleaned manifest written by `fix` (`fmt` is `tsv` by default, or `csv` if selected).
 - `fix.log`: summary of what `fix` changed (empty-like values standardized, fully empty rows removed).
 
 How to read validation status:
