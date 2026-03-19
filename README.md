@@ -121,20 +121,30 @@ Expected:
 - `fix`: requires at least one of `--metadata`, `--matrix`, or `--manifest`
 - Supported tabular file formats: `.csv`, `.tsv`, `.txt` (delimiter is auto-detected)
 
-| Option | Purpose | Notes |
-|---|---|---|
-| `--metadata FILE` | Sample sheet with one row per sample | Must include your metadata sample-ID column (`--metadata-id`) and condition column (`--condition`) |
-| `--matrix FILE` | Feature-by-sample table | Sample IDs are read from sample columns |
-| `--manifest FILE` | Sample file inventory table | Used to compare metadata sample IDs with file-level sample IDs |
-| `--metadata-id COLUMN` | Column name in metadata that contains sample IDs | Default: `sample_id` |
-| `--manifest-id COLUMN` | Column name in manifest that contains sample IDs | Default: `sample_id` |
-| `--condition COLUMN` | Main analysis grouping variable | Default: `condition` |
-| `--batch COLUMN` | Technical grouping variable | Example: sequencing run or center |
-| `--pair COLUMN` | Pair/block variable | For paired or blocked designs |
-| `--covars COLS...` | Extra model columns for design checks | Provide as space-separated names |
-| `--contrast A_vs_B` | Target comparison format | Example: `Treated_vs_Control` |
-| `--report NAME` | Output report filename | `validate` only; `.html` is added if omitted |
-| `--format FMT` | Fixed table output format | `fix` only; `tsv` or `csv` (default: `tsv`) |
+Optional arguments by file type:
+
+### Metadata file options
+- `--metadata FILE`: metadata table path.
+- `--metadata-id COLUMN`: metadata sample-ID column name (default: `sample_id`).
+- `--condition COLUMN`: main grouping column (default: `condition`).
+- `--batch COLUMN`: optional batch column.
+- `--pair COLUMN`: optional pair/block column.
+- `--covars COLS...`: optional covariate columns (space-separated names).
+- `--contrast A_vs_B`: optional contrast in `GroupA_vs_GroupB` format.
+
+### Matrix file options
+- `--matrix FILE`: feature-by-sample matrix path.
+- Sample IDs are read from matrix sample columns.
+- If `--metadata` is omitted, metadata is inferred from matrix sample columns.
+
+### Manifest file options
+- `--manifest FILE`: manifest table path.
+- `--manifest-id COLUMN`: manifest sample-ID column name (default: `sample_id`).
+- Used for cross-file sample-ID consistency checks against metadata.
+
+Other command options:
+- `--report NAME`: output report filename for `validate` (`.html` is added if omitted).
+- `--format FMT`: fixed-table output format for `fix` (`tsv` or `csv`, default: `tsv`).
 
 ## Outputs
 ### `validate`

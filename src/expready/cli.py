@@ -472,34 +472,39 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     validate_parser.short_description = "Run full validation."
-    validate_parser.add_argument(
+    validate_metadata_group = validate_parser.add_argument_group("metadata file options")
+    validate_matrix_group = validate_parser.add_argument_group("matrix file options")
+    validate_manifest_group = validate_parser.add_argument_group("manifest file options")
+    validate_other_group = validate_parser.add_argument_group("other options")
+
+    validate_metadata_group.add_argument(
         "--metadata",
         required=False,
         type=_existing_file,
         metavar="FILE",
         help="Metadata table path (.csv or .tsv). If omitted, metadata is inferred from --matrix sample names.",
     )
-    validate_parser.add_argument(
+    validate_metadata_group.add_argument(
         "--metadata-id",
         dest="metadata_sample",
         default="sample_id",
         metavar="COLUMN",
         help="Column name in metadata that contains sample IDs (default: sample_id).",
     )
-    validate_parser.add_argument(
+    validate_metadata_group.add_argument(
         "--condition",
         required=False,
         default="condition",
         metavar="COLUMN",
         help="Main grouping column you want to compare (for example: condition, cohort, treatment).",
     )
-    validate_parser.add_argument(
+    validate_other_group.add_argument(
         "--output",
         required=True,
         metavar="DIR",
         help="Directory where the report files will be written.",
     )
-    validate_parser.add_argument(
+    validate_other_group.add_argument(
         "--report",
         dest="report_name",
         required=False,
@@ -507,46 +512,46 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="NAME",
         help="Optional HTML report filename (with or without .html).",
     )
-    validate_parser.add_argument(
+    validate_matrix_group.add_argument(
         "--matrix",
         required=False,
         type=_existing_file,
         metavar="FILE",
         help="Optional feature matrix (.csv/.tsv). Supports common layouts like 'gene_id, gene_name, <sample columns>'.",
     )
-    validate_parser.add_argument(
+    validate_manifest_group.add_argument(
         "--manifest",
         required=False,
         type=_existing_file,
         metavar="FILE",
         help="Optional manifest file (.csv/.tsv) for sample-to-file consistency checks.",
     )
-    validate_parser.add_argument(
+    validate_manifest_group.add_argument(
         "--manifest-id",
         dest="manifest_sample",
         default="sample_id",
         metavar="COLUMN",
         help="Manifest column containing sample IDs (default: sample_id).",
     )
-    validate_parser.add_argument(
+    validate_metadata_group.add_argument(
         "--batch",
         required=False,
         metavar="COLUMN",
         help="Optional processing/batch column for confounding checks.",
     )
-    validate_parser.add_argument(
+    validate_metadata_group.add_argument(
         "--pair",
         required=False,
         metavar="COLUMN",
         help="Optional pair/block column for paired or blocked designs.",
     )
-    validate_parser.add_argument(
+    validate_metadata_group.add_argument(
         "--contrast",
         required=False,
         metavar="A_vs_B",
         help="Optional contrast in 'GroupA_vs_GroupB' format.",
     )
-    validate_parser.add_argument(
+    validate_metadata_group.add_argument(
         "--covars",
         dest="covars",
         nargs="*",
@@ -566,73 +571,78 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     fix_parser.short_description = "Fix inputs."
-    fix_parser.add_argument(
+    fix_metadata_group = fix_parser.add_argument_group("metadata file options")
+    fix_matrix_group = fix_parser.add_argument_group("matrix file options")
+    fix_manifest_group = fix_parser.add_argument_group("manifest file options")
+    fix_other_group = fix_parser.add_argument_group("other options")
+
+    fix_metadata_group.add_argument(
         "--metadata",
         required=False,
         type=_existing_file,
         metavar="FILE",
         help="Metadata table path (.csv or .tsv).",
     )
-    fix_parser.add_argument(
+    fix_metadata_group.add_argument(
         "--metadata-id",
         dest="metadata_sample",
         default="sample_id",
         metavar="COLUMN",
         help="Column name in metadata that contains sample IDs (default: sample_id).",
     )
-    fix_parser.add_argument(
+    fix_metadata_group.add_argument(
         "--condition",
         required=False,
         default="condition",
         metavar="COLUMN",
         help="Main grouping column to validate (default: condition).",
     )
-    fix_parser.add_argument(
+    fix_other_group.add_argument(
         "--output",
         required=True,
         metavar="DIR",
         help="Directory where fixed files and log will be written.",
     )
-    fix_parser.add_argument(
+    fix_matrix_group.add_argument(
         "--matrix",
         required=False,
         type=_existing_file,
         metavar="FILE",
         help="Optional feature matrix (.csv/.tsv). Used for validation and metadata inference if --metadata is omitted.",
     )
-    fix_parser.add_argument(
+    fix_manifest_group.add_argument(
         "--manifest",
         required=False,
         type=_existing_file,
         metavar="FILE",
         help="Optional manifest file (.csv/.tsv).",
     )
-    fix_parser.add_argument(
+    fix_manifest_group.add_argument(
         "--manifest-id",
         dest="manifest_sample",
         default="sample_id",
         metavar="COLUMN",
         help="Manifest column containing sample IDs (default: sample_id).",
     )
-    fix_parser.add_argument(
+    fix_metadata_group.add_argument(
         "--batch",
         required=False,
         metavar="COLUMN",
         help="Optional processing/batch column for confounding checks.",
     )
-    fix_parser.add_argument(
+    fix_metadata_group.add_argument(
         "--pair",
         required=False,
         metavar="COLUMN",
         help="Optional pair/block column for paired or blocked designs.",
     )
-    fix_parser.add_argument(
+    fix_metadata_group.add_argument(
         "--contrast",
         required=False,
         metavar="A_vs_B",
         help="Optional contrast in 'GroupA_vs_GroupB' format.",
     )
-    fix_parser.add_argument(
+    fix_metadata_group.add_argument(
         "--covars",
         dest="covars",
         nargs="*",
@@ -640,7 +650,7 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="COLS",
         help="Optional covariate columns, space-separated.",
     )
-    fix_parser.add_argument(
+    fix_other_group.add_argument(
         "--format",
         dest="format",
         choices=["csv", "tsv"],
