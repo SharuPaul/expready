@@ -48,19 +48,19 @@ pip install -e .
 ## Test runs
 Pass example (metadata + matrix):
 ```bash
-python -m expready validate --metadata examples/metadata_valid.csv --matrix examples/matrix_valid.tsv --output reports/test_pass
+expready validate --metadata examples/metadata_valid.csv --matrix examples/matrix_valid.tsv --output reports/test_pass --report pass_report
 ```
 Expected:
 - Console shows `Status: PASS`
-- Writes `reports/test_pass/report.html`
+- Writes `reports/test_pass/pass_report.html`
 
 Fail example (matrix only):
 ```bash
-python -m expready validate --matrix examples/matrix_valid.tsv --output reports/test_fail
+expready validate --matrix examples/matrix_valid.tsv --output reports/test_fail --report fail_report
 ```
 Expected:
 - Console may show `Status: FAIL` (this is expected for this demo path)
-- Writes `reports/test_fail/report.html`
+- Writes `reports/test_fail/fail_report.html`
 - Writes `reports/test_fail/metadata.inferred.csv`
 
 ## Input options
@@ -97,13 +97,13 @@ Behavior:
 Examples:
 ```bash
 # matrix-only validation (metadata inferred automatically)
-python -m expready validate --matrix counts.tsv --output reports/validate_matrix_only
+expready validate --matrix counts.tsv --output reports/validate_matrix_only
 
 # metadata + matrix validation
-python -m expready validate --metadata metadata.csv --matrix counts.tsv --output reports/validate_meta_matrix
+expready validate --metadata metadata.csv --matrix counts.tsv --output reports/validate_meta_matrix
 
 # metadata + manifest validation (manifest column is named "rownames")
-python -m expready validate --metadata metadata.csv --manifest manifest.tsv --sample rownames --output reports/validate_meta_manifest
+expready validate --metadata metadata.csv --manifest manifest.tsv --sample rownames --output reports/validate_meta_manifest
 ```
 
 ### `fix`
@@ -121,13 +121,13 @@ Behavior:
 Examples:
 ```bash
 # metadata fixed + manifest fixed + fix.log
-python -m expready fix --metadata metadata.csv --manifest manifest.tsv --output reports/fix_meta_manifest
+expready fix --metadata metadata.csv --manifest manifest.tsv --output reports/fix_meta_manifest
 
 # metadata inferred from matrix, then fixed + fix.log
-python -m expready fix --matrix counts.tsv --output reports/fix_from_matrix
+expready fix --matrix counts.tsv --output reports/fix_from_matrix
 
 # only manifest fixed + fix.log
-python -m expready fix --manifest manifest.tsv --output reports/fix_manifest_only
+expready fix --manifest manifest.tsv --output reports/fix_manifest_only
 ```
 
 ## Status and severity
@@ -141,7 +141,7 @@ python -m expready fix --manifest manifest.tsv --output reports/fix_manifest_onl
 
 ## Help
 ```bash
-python -m expready --help
-python -m expready validate --help
-python -m expready fix --help
+expready --help
+expready validate --help
+expready fix --help
 ```
