@@ -1,0 +1,11 @@
+include LICENSE
+include README.md
+include CHANGELOG.md
+include RELEASE.md
+
+graft src/expready
+
+prune tests
+exclude .gitignore
+exclude .python-version
+global-exclude __pycache__ *.py[cod]
