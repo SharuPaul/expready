@@ -51,7 +51,7 @@ def _detect_mode(lines: list[str]) -> str:
 
 
 def load_table(path: Path) -> Table:
-    raw_lines = path.read_text(encoding="utf-8").splitlines()
+    raw_lines = path.read_text(encoding="utf-8-sig").splitlines()
     lines = [line for line in raw_lines if line.strip() != ""]
     if not lines:
         return Table(columns=[], rows=[])
@@ -73,7 +73,7 @@ def load_table(path: Path) -> Table:
 
 
 def inspect_delimiter_issues(path: Path) -> Optional[str]:
-    raw_lines = path.read_text(encoding="utf-8").splitlines()
+    raw_lines = path.read_text(encoding="utf-8-sig").splitlines()
     lines = [line for line in raw_lines if line.strip() != ""]
     if len(lines) < 2:
         return None
@@ -103,7 +103,7 @@ def inspect_delimiter_issues(path: Path) -> Optional[str]:
 
 
 def detect_delimiter_mode(path: Path) -> str:
-    raw_lines = path.read_text(encoding="utf-8").splitlines()
+    raw_lines = path.read_text(encoding="utf-8-sig").splitlines()
     lines = [line for line in raw_lines if line.strip() != ""]
     if not lines:
         return ","

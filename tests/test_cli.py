@@ -1,5 +1,10 @@
+import argparse
 from pathlib import Path
+from unittest.mock import patch
 
+import pytest
+
+from expready.cli import _existing_file
 from expready.cli import main
 
 
@@ -101,6 +106,32 @@ def test_cli_supports_custom_metadata_sample_column(capsys) -> None:
     assert (out_dir / "report.html").exists()
 
 
+def test_cli_supports_shared_sample_id_option(capsys) -> None:
+    fixture_dir = Path(__file__).parent / "fixtures"
+    out_dir = Path("tests/.tmp/cli_out_shared_sample")
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    exit_code = main(
+        [
+            "validate",
+            "--metadata",
+            str(fixture_dir / "metadata_custom_sample.csv"),
+            "--manifest",
+            str(fixture_dir / "manifest_custom_sample.tsv"),
+            "--sample-id",
+            "sample",
+            "--condition",
+            "condition",
+            "--output",
+            str(out_dir),
+        ]
+    )
+    _ = capsys.readouterr()
+
+    assert exit_code == 0
+    assert (out_dir / "report.html").exists()
+
+
 def test_cli_validate_auto_metadata_from_matrix(capsys) -> None:
     fixture_dir = Path(__file__).parent / "fixtures"
     out_dir = Path("tests/.tmp/cli_out_auto")
@@ -117,7 +148,7 @@ def test_cli_validate_auto_metadata_from_matrix(capsys) -> None:
     )
     captured = capsys.readouterr()
 
-    assert exit_code == 0
+    assert exit_code == 1
     assert "metadata_source" not in captured.out  # output stays user-facing only
     assert (out_dir / "report.html").exists()
 
@@ -246,3 +277,95 @@ def test_cli_fix_without_options_prints_short_help(capsys) -> None:
     assert "Fix inputs." in text
     assert "usage: expready fix [options]" in text
     assert "help:" in text
+
+
+def test_cli_validate_fails_fast_when_metadata_id_column_missing(capsys) -> None:
+    fixture_dir = Path(__file__).parent / "fixtures"
+    out_dir = Path("tests/.tmp/cli_out_bad_metadata_col")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    report_path = out_dir / "report.html"
+    if report_path.exists():
+        report_path.unlink()
+
+    exit_code = main(
+        [
+            "validate",
+            "--metadata",
+            str(fixture_dir / "metadata_valid.csv"),
+            "--metadata-id",
+            "bad_sample_col",
+            "--output",
+            str(out_dir),
+        ]
+    )
+    captured = capsys.readouterr()
+    text = captured.out + captured.err
+
+    assert exit_code == 2
+    assert "Input error(s):" in text
+    assert not report_path.exists()
+
+
+def test_cli_validate_fails_fast_when_manifest_id_column_missing(capsys) -> None:
+    fixture_dir = Path(__file__).parent / "fixtures"
+    out_dir = Path("tests/.tmp/cli_out_bad_manifest_col")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    report_path = out_dir / "report.html"
+    if report_path.exists():
+        report_path.unlink()
+
+    exit_code = main(
+        [
+            "validate",
+            "--metadata",
+            str(fixture_dir / "metadata_valid.csv"),
+            "--manifest",
+            str(fixture_dir / "manifest_valid.tsv"),
+            "--manifest-id",
+            "bad_manifest_col",
+            "--output",
+            str(out_dir),
+        ]
+    )
+    captured = capsys.readouterr()
+    text = captured.out + captured.err
+
+    assert exit_code == 2
+    assert "Input error(s):" in text
+    assert not report_path.exists()
+
+
+def test_cli_validate_fails_fast_when_input_delimiters_are_inconsistent(capsys) -> None:
+    fixture_dir = Path(__file__).parent / "fixtures"
+    out_dir = Path("tests/.tmp/cli_out_bad_delimiter")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    report_path = out_dir / "report.html"
+    if report_path.exists():
+        report_path.unlink()
+
+    exit_code = main(
+        [
+            "validate",
+            "--metadata",
+            str(fixture_dir / "metadata_valid.csv"),
+            "--matrix",
+            str(fixture_dir / "matrix_inconsistent_delimiter.tsv"),
+            "--output",
+            str(out_dir),
+        ]
+    )
+    captured = capsys.readouterr()
+    text = captured.out + captured.err
+
+    assert exit_code == 2
+    assert "Input error(s):" in text
+    assert "inconsistent delimiters" in text
+    assert not report_path.exists()
+
+
+def test_existing_file_reports_unreadable_path() -> None:
+    target = str((Path(__file__).parent / "fixtures" / "metadata_valid.csv"))
+    with patch("pathlib.Path.open", side_effect=PermissionError("denied")):
+        with pytest.raises(argparse.ArgumentTypeError) as exc:
+            _existing_file(target)
+    assert "File is not readable:" in str(exc.value)

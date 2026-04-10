@@ -214,3 +214,14 @@ __pycache__/
 examples/output_demo/
 pytest-cache-files-*/
 data/
+*venv
+.tmp/
+reports/
+.coverage*
+pip-wheel-metadata/
+*.tmp
+*.bak
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

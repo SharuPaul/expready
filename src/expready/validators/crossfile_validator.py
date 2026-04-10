@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from expready.loaders import infer_sample_columns
 from expready.models import Issue, Table
 from expready.rules import make_issue
@@ -72,5 +74,50 @@ def validate_metadata_vs_manifest(
 
     if not missing_from_manifest and not extra_in_manifest:
         issues.append(make_issue("CROSS_OK_001"))
+
+    return issues
+
+
+def validate_manifest_paths(
+    manifest_table: Table,
+    *,
+    manifest_path_column: str,
+    check_exists: bool = False,
+    manifest_base_dir: Path | None = None,
+) -> list[Issue]:
+    issues: list[Issue] = []
+    if manifest_path_column not in manifest_table.columns:
+        issues.append(
+            make_issue(
+                "CROSS_PATH_001",
+                detail=(
+                    f"Requested column '{manifest_path_column}' not found. "
+                    f"Available columns: {', '.join(manifest_table.columns)}."
+                ),
+            )
+        )
+        return issues
+
+    paths = [value.strip() for value in manifest_table.column_values(manifest_path_column)]
+    missing_count = sum(1 for value in paths if value == "")
+    if missing_count:
+        issues.append(make_issue("CROSS_PATH_003", detail=f"Empty path values: {missing_count}."))
+
+    non_empty_paths = [value for value in paths if value != ""]
+    duplicates = sorted({value for value in non_empty_paths if non_empty_paths.count(value) > 1})
+    if duplicates:
+        issues.append(make_issue("CROSS_PATH_002", detail=f"Duplicate paths: {', '.join(duplicates[:10])}."))
+
+    if check_exists:
+        missing_files: list[str] = []
+        for raw in non_empty_paths:
+            candidate = Path(raw).expanduser()
+            if not candidate.is_absolute() and manifest_base_dir is not None:
+                candidate = (manifest_base_dir / candidate).resolve()
+            if not candidate.exists():
+                missing_files.append(raw)
+        if missing_files:
+            preview = ", ".join(missing_files[:10])
+            issues.append(make_issue("CROSS_PATH_004", detail=f"Missing paths: {preview}."))
 
     return issues

@@ -35,18 +35,6 @@ pip install -e .
 - `validate`: check your inputs and create an HTML report.
 - `fix`: clean common formatting issues in metadata/manifest files.
 
-`validate` checks:
-- Metadata quality: required columns, duplicate sample IDs, missing key values, suspicious sample-ID formatting.
-- Design quality: at least two condition groups, low replicate groups, batch-condition confounding, pair/block completeness, group imbalance, and contrast format/group existence.
-- Cross-file consistency: metadata sample IDs vs matrix sample columns, and metadata sample IDs vs manifest sample column.
-
-`fix` checks and cleans:
-- Trims leading/trailing spaces across metadata and manifest values.
-- Standardizes empty-like values (`na`, `n/a`, `null`, `none`, case-insensitive) to empty values.
-- Removes rows that are fully empty after cleanup.
-- Normalizes header names by replacing internal spaces with underscores (example: `#OTU ID` -> `#OTU_ID`) when input is not space-delimited.
-- For truly space-delimited input, header-space normalization is skipped to avoid ambiguous header splitting.
-
 ## Input file requirements
 Supported formats for all inputs: `.csv`, `.tsv`, `.txt`.
 Delimiter handling is flexible: expready auto-detects common delimiters (comma, tab, semicolon, pipe, or whitespace-separated columns).
@@ -55,8 +43,8 @@ All input files must include a header row (column names in the first row). Heade
 `metadata` file (`--metadata`):
 - One row per sample.
 - Required columns:
-  - Metadata sample-ID column (default `sample_id`, or the column passed via `--metadata-id`)
-  - Condition column (default `condition`, or the column passed via `--condition`)
+  - Metadata sample-ID column (default `sample_id`, or the column passed via `--sample-id` / `--metadata-id`)
+  - Condition column (default `condition`; if default `condition` is not found, `treatment` is tried; or use `--condition`)
 - If you pass `--batch`, `--pair`, or `--covars`, those columns must exist in metadata.
 - Metadata sample-ID values should be unique and non-empty.
 
@@ -64,14 +52,15 @@ All input files must include a header row (column names in the first row). Heade
 - Feature-by-sample table (rows = features, sample IDs in columns).
 - Sample column names should match metadata sample-ID values exactly when both files are used.
 - If metadata is not provided, `expready` infers metadata from matrix sample columns.
+- Caveat: matrix-only runs are supported, but inferred metadata can weaken design checks; use a real metadata file for more reliable design validation.
 - Common annotation headers such as `gene_id`, `feature_id`, or `#OTU ID` are supported as non-sample columns.
 
 `manifest` file (`--manifest`):
 - Sample inventory table (for example, sample ID + file path columns).
-- Must contain the sample-ID column specified by `--manifest-id` (default `sample_id`).
+- Must contain the sample-ID column specified by `--sample-id` / `--manifest-id` (default `sample_id`).
 - Sample IDs in this column should match metadata sample-ID values exactly.
 
-Minimal examples:
+### Minimal examples:
 
 Metadata (`metadata.csv`)
 ```csv
@@ -98,6 +87,34 @@ S3	/data/S3.fastq.gz
 S4	/data/S4.fastq.gz
 ```
 
+## Common Study Templates
+Use these as starting points for common experiment types.
+
+Bulk RNA-seq (metadata + count matrix):
+```bash
+expready validate --metadata metadata.csv --matrix counts.tsv --condition condition --output reports/rnaseq
+```
+
+Microbiome / 16S (feature table + metadata):
+```bash
+expready validate --metadata metadata.tsv --matrix feature_table.tsv --condition group --output reports/microbiome
+```
+
+Metabolomics (intensity matrix with batch effect checks):
+```bash
+expready validate --metadata metadata.csv --matrix intensities.csv --condition condition --batch batch --output reports/metabolomics
+```
+
+Paired or blocked design (for paired samples/subjects):
+```bash
+expready validate --metadata metadata.csv --matrix counts.tsv --condition condition --pair pair_id --output reports/paired
+```
+
+Manifest consistency check (sample inventory + paths):
+```bash
+expready validate --metadata metadata.csv --manifest manifest.tsv --output reports/manifest_check
+```
+
 ## Test runs
 Pass example (metadata + matrix):
 ```bash
@@ -121,12 +138,13 @@ Expected:
 - `fix`: requires at least one of `--metadata`, `--matrix`, or `--manifest`
 - Supported tabular file formats: `.csv`, `.tsv`, `.txt` (delimiter is auto-detected)
 
-Optional arguments by file type:
+### Optional arguments by file type:
 
 ### Metadata file options
 - `--metadata FILE`: metadata table path.
-- `--metadata-id COLUMN`: metadata sample-ID column name (default: `sample_id`).
-- `--condition COLUMN`: main grouping column (default: `condition`).
+- `--sample-id COLUMN`: shared sample-ID column name for metadata and manifest (default: `sample_id`).
+- `--metadata-id COLUMN`: metadata sample-ID column name (overrides `--sample-id` for metadata).
+- `--condition COLUMN`: main grouping column (default: `condition`, matched case-insensitively; if default `condition` is not found, `treatment` is tried).
 - `--batch COLUMN`: optional batch column.
 - `--pair COLUMN`: optional pair/block column.
 - `--covars COLS...`: optional covariate columns (space-separated names).
@@ -139,7 +157,9 @@ Optional arguments by file type:
 
 ### Manifest file options
 - `--manifest FILE`: manifest table path.
-- `--manifest-id COLUMN`: manifest sample-ID column name (default: `sample_id`).
+- `--manifest-id COLUMN`: manifest sample-ID column name (overrides `--sample-id` for manifest).
+- `--manifest-path COLUMN`: manifest column containing file paths.
+- `--check-paths`: check whether manifest paths exist on disk (uses `--manifest-path` or common names like `file_path`).
 - Used for cross-file sample-ID consistency checks against metadata.
 
 Other command options:
@@ -154,9 +174,12 @@ Writes:
 
 Behavior:
 - Provide at least one of `--metadata` or `--matrix`.
+- Input-contract errors fail fast and do not write a report (for example: missing required columns requested by CLI options, inconsistent delimiters, or invalid manifest sample/path column settings).
 - If you provide only `--matrix`, expready builds metadata from matrix sample columns and saves it as `metadata.inferred.csv`.
-- If you provide `--manifest`, expready compares metadata sample-ID values (from `--metadata-id`, default `sample_id`) to the manifest column set by `--manifest-id` (default `sample_id`).
-- `--metadata-id` is for metadata; `--manifest-id` is for manifest.
+- Matrix-only validation is useful for quick checks, but inferred metadata depends on sample-name patterns and may reduce design-check accuracy.
+- Sample-ID and condition column-name matching is case-insensitive, and treats `_`, `-`, and spaces as equivalent for matching.
+- If you provide `--manifest`, expready compares metadata sample-ID values (from `--sample-id` or `--metadata-id`) to the manifest column set by `--sample-id` or `--manifest-id`.
+- `--sample-id` sets a shared default; `--metadata-id` and `--manifest-id` override it per file.
 - If the manifest sample column is missing, validation returns a blocking issue (`FAIL`).
 - `validate` expects sample IDs to match exactly across files.
 
@@ -229,8 +252,9 @@ Common report language and what it means:
 - `Some matrix sample IDs are not listed in metadata`: sample IDs exist in matrix columns but not in metadata.
 - `Some metadata sample IDs are missing in the manifest`: sample IDs exist in metadata but are not found in the manifest sample-ID column.
 - `Manifest sample-ID column was not found`: the column passed via `--manifest-id` does not exist in manifest.
+- `Manifest path column was not found`: the column passed via `--manifest-path` does not exist in manifest.
 - `Header names contain spaces`: non-blocking warning; run `fix` to normalize headers with underscores.
-- `Input file appears to have inconsistent delimiters`: rows do not have a consistent column structure (often caused by mixed tabs/spaces/commas). The report will suggest standardizing delimiters or running `expready fix` and then re-running `validate`.
+- `Input file appears to have inconsistent delimiters`: rows do not have a consistent column structure (often caused by mixed tabs/spaces/commas). In CLI `validate`, this is treated as an input error and the run exits before report generation.
 - `Duplicate sample IDs`: the same metadata sample-ID value appears in more than one metadata row.
 - `Required metadata fields are empty`: required columns (like metadata sample ID or condition) contain missing values.
 - `Some condition groups have too few replicates`: at least one condition group has fewer than 2 samples.

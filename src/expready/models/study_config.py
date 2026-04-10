@@ -14,6 +14,8 @@ class StudyConfig:
     matrix_path: Optional[Path] = None
     manifest_path: Optional[Path] = None
     manifest_sample_column: str = "sample_id"
+    manifest_path_column: Optional[str] = None
+    check_manifest_paths: bool = False
     batch_column: Optional[str] = None
     pair_column: Optional[str] = None
     covariates: list[str] = field(default_factory=list)

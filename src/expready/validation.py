@@ -10,6 +10,7 @@ from expready.models import Report, StudyConfig, Table
 from expready.rules import make_issue
 from expready.validators import (
     validate_design,
+    validate_manifest_paths,
     validate_metadata,
     validate_metadata_vs_matrix,
     validate_metadata_vs_manifest,
@@ -19,9 +20,47 @@ from expready.validators import (
 _REPLICATE_PATTERN = re.compile(r"^R\d+$", re.IGNORECASE)
 
 
+def _normalize_column_token(name: str) -> str:
+    return re.sub(r"[\s\-_]+", "_", name.strip().lower())
+
+
+def _resolve_column_name(columns: list[str], requested: str) -> str:
+    if requested in columns:
+        return requested
+
+    requested_lower = requested.lower()
+    for column in columns:
+        if column.lower() == requested_lower:
+            return column
+
+    requested_token = _normalize_column_token(requested)
+    for column in columns:
+        if _normalize_column_token(column) == requested_token:
+            return column
+
+    return requested
+
+
+def _resolve_condition_column(columns: list[str], requested: str) -> str:
+    resolved = _resolve_column_name(columns, requested)
+    if resolved in columns:
+        return resolved
+
+    # If the default condition column is not present, try a common alias.
+    if _normalize_column_token(requested) == "condition":
+        treatment = _resolve_column_name(columns, "treatment")
+        if treatment in columns:
+            return treatment
+
+    return requested
+
+
 def _parse_sample_id(sample_id: str, *, sample_id_column: str) -> dict[str, str]:
     parts = sample_id.split("_")
-    condition = parts[0] if parts else sample_id
+    # Matrix-only metadata inference is intentionally conservative:
+    # keep condition as a single placeholder so design checks fail until
+    # users provide real metadata conditions.
+    condition = "inferred"
     replicate = ""
     dissection = ""
 
@@ -51,13 +90,20 @@ def build_metadata_from_matrix(matrix_table: Table, *, sample_id_column: str = "
     return Table(columns=[sample_id_column, "condition", "dissection", "replicate"], rows=rows)
 
 
-def build_study_summary(metadata_table: Table, config: StudyConfig) -> dict[str, object]:
-    sample_col = config.metadata_sample_column
+def build_study_summary(
+    metadata_table: Table,
+    config: StudyConfig,
+    *,
+    sample_col: Optional[str] = None,
+    condition_col: Optional[str] = None,
+) -> dict[str, object]:
+    sample_col = sample_col or config.metadata_sample_column
+    condition_col = condition_col or config.condition_column
     sample_ids = metadata_table.column_values(sample_col) if sample_col in metadata_table.columns else []
     duplicate_ids = sorted({sid for sid in sample_ids if sid and sample_ids.count(sid) > 1})
 
     summary_columns: list[str] = []
-    for column in [config.condition_column, config.batch_column, config.pair_column, *config.covariates]:
+    for column in [condition_col, config.batch_column, config.pair_column, *config.covariates]:
         if column and column in metadata_table.columns and column not in summary_columns:
             summary_columns.append(column)
 
@@ -75,8 +121,8 @@ def build_study_summary(metadata_table: Table, config: StudyConfig) -> dict[str,
         }
 
     condition_stats: dict[str, object] = {}
-    if config.condition_column in columns_summary:
-        condition_levels = columns_summary[config.condition_column].get("levels", [])
+    if condition_col in columns_summary:
+        condition_levels = columns_summary[condition_col].get("levels", [])
         counts = [int(entry["count"]) for entry in condition_levels if isinstance(entry, dict) and "count" in entry]
         if counts:
             min_count = min(counts)
@@ -130,6 +176,13 @@ def run_validation(config: StudyConfig) -> tuple[Report, Table]:
         metadata_table = Table(columns=[config.metadata_sample_column, config.condition_column], rows=[])
         report.metadata["metadata_source"] = "missing"
 
+    resolved_metadata_sample_column = _resolve_column_name(metadata_table.columns, config.metadata_sample_column)
+    resolved_manifest_sample_column = (
+        _resolve_column_name(manifest_table.columns, config.manifest_sample_column) if manifest_table else config.manifest_sample_column
+    )
+    resolved_condition_column = _resolve_condition_column(metadata_table.columns, config.condition_column)
+    report.metadata["condition_column"] = resolved_condition_column
+
     header_checks: list[tuple[str, Optional[Table]]] = [
         ("metadata", metadata_table if config.metadata_path else None),
         ("matrix", matrix_table),
@@ -148,18 +201,23 @@ def run_validation(config: StudyConfig) -> tuple[Report, Table]:
                 )
             )
 
-    report.metadata["study_summary"] = build_study_summary(metadata_table, config)
+    report.metadata["study_summary"] = build_study_summary(
+        metadata_table,
+        config,
+        sample_col=resolved_metadata_sample_column,
+        condition_col=resolved_condition_column,
+    )
 
     for issue in validate_metadata(
         metadata_table,
-        condition_column=config.condition_column,
-        sample_id_column=config.metadata_sample_column,
+        condition_column=resolved_condition_column,
+        sample_id_column=resolved_metadata_sample_column,
     ):
         report.add_issue(issue)
 
     for issue in validate_design(
         metadata_table,
-        condition_column=config.condition_column,
+        condition_column=resolved_condition_column,
         batch_column=config.batch_column,
         pair_column=config.pair_column,
         covariates=config.covariates,
@@ -171,7 +229,7 @@ def run_validation(config: StudyConfig) -> tuple[Report, Table]:
         for issue in validate_metadata_vs_matrix(
             metadata_table,
             matrix_table,
-            sample_id_column=config.metadata_sample_column,
+            sample_id_column=resolved_metadata_sample_column,
         ):
             report.add_issue(issue)
 
@@ -179,10 +237,19 @@ def run_validation(config: StudyConfig) -> tuple[Report, Table]:
         for issue in validate_metadata_vs_manifest(
             metadata_table,
             manifest_table,
-            metadata_sample_column=config.metadata_sample_column,
-            manifest_sample_column=config.manifest_sample_column,
+            metadata_sample_column=resolved_metadata_sample_column,
+            manifest_sample_column=resolved_manifest_sample_column,
         ):
             report.add_issue(issue)
+        if config.manifest_path_column:
+            resolved_manifest_path_column = _resolve_column_name(manifest_table.columns, config.manifest_path_column)
+            for issue in validate_manifest_paths(
+                manifest_table,
+                manifest_path_column=resolved_manifest_path_column,
+                check_exists=config.check_manifest_paths,
+                manifest_base_dir=config.manifest_path.parent if config.manifest_path else None,
+            ):
+                report.add_issue(issue)
 
     return report, metadata_table
 
