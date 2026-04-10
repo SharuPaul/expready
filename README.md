@@ -180,7 +180,7 @@ Behavior:
 - Sample-ID and condition column-name matching is case-insensitive, and treats `_`, `-`, and spaces as equivalent for matching.
 - If you provide `--manifest`, expready compares metadata sample-ID values (from `--sample-id` or `--metadata-id`) to the manifest column set by `--sample-id` or `--manifest-id`.
 - `--sample-id` sets a shared default; `--metadata-id` and `--manifest-id` override it per file.
-- If the manifest sample column is missing, validation returns a blocking issue (`FAIL`).
+- If the manifest sample column is missing, validation exits with an input error and does not generate a report.
 - `validate` expects sample IDs to match exactly across files.
 
 Examples:
