@@ -5,7 +5,7 @@ It focuses on metadata quality, design quality, and sample-ID consistency across
 
 ## Setup
 ```bash
-python -m pip install expready
+pip install expready
 ```
 
 ## Commands
