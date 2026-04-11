@@ -3,32 +3,9 @@
 `expready` is a CLI tool that checks whether study inputs are analysis-ready before downstream workflows.
 It focuses on metadata quality, design quality, and sample-ID consistency across files.
 
-## Get the code
-```bash
-git clone https://github.com/SharuPaul/expready.git
-cd expready
-```
-
-SSH:
-```bash
-git clone git@github.com:SharuPaul/expready.git
-cd expready
-```
-
 ## Setup
-Create and activate a virtual environment, then install the project:
-
 ```bash
-python -m venv expread_venv
-source expread_venv/bin/activate
-pip install -e .
-```
-
-Windows PowerShell:
-```powershell
-python -m venv expread_venv
-.\expread_venv\Scripts\Activate.ps1
-pip install -e .
+python -m pip install expready
 ```
 
 ## Commands
