@@ -6,6 +6,13 @@ from typing import Optional
 from expready.loaders import inspect_delimiter_issues, load_manifest, load_metadata
 from expready.models import StudyConfig
 
+_GROUP_ORDER = ["metadata", "matrix", "manifest"]
+_GROUP_HINTS = {
+    "metadata": "Verify metadata headers and update options like --metadata-id/--condition/--batch/--pair/--covars.",
+    "matrix": "Fix table delimiters/structure and ensure the matrix file uses a consistent separator.",
+    "manifest": "Verify manifest headers and update options like --manifest-id/--manifest-path/--check-paths.",
+}
+
 
 def _normalize_column_token(name: str) -> str:
     return re.sub(r"[\s\-_]+", "_", name.strip().lower())
@@ -74,62 +81,104 @@ def with_inferred_manifest_path_column(config: StudyConfig) -> StudyConfig:
     )
 
 
-def collect_input_errors(config: StudyConfig) -> list[str]:
-    errors: list[str] = []
+def collect_input_error_groups(config: StudyConfig) -> dict[str, list[str]]:
+    grouped: dict[str, list[str]] = {}
+
+    def add(group: str, message: str) -> None:
+        grouped.setdefault(group, []).append(message)
+
     for label, path in [("metadata", config.metadata_path), ("matrix", config.matrix_path), ("manifest", config.manifest_path)]:
         if path is None:
             continue
         detail = inspect_delimiter_issues(path)
         if detail:
-            errors.append(f"{label}: {detail}")
+            add(label, f"Inconsistent delimiter structure detected. {detail}")
 
     if config.metadata_path:
         metadata_table = load_metadata(config.metadata_path)
         resolved_sample = resolve_column_name(metadata_table.columns, config.metadata_sample_column)
         if resolved_sample not in metadata_table.columns:
-            errors.append(
-                f"metadata: sample-ID column '{config.metadata_sample_column}' was not found. "
-                f"Available columns: {', '.join(metadata_table.columns)}."
+            add(
+                "metadata",
+                f"Sample-ID column '{config.metadata_sample_column}' was not found. "
+                f"Available columns: {', '.join(metadata_table.columns)}.",
             )
 
         resolved_condition = resolve_condition_column(metadata_table.columns, config.condition_column)
         if resolved_condition not in metadata_table.columns:
-            errors.append(
-                f"metadata: condition column '{config.condition_column}' was not found "
-                f"(default fallback 'treatment' also not found). Available columns: {', '.join(metadata_table.columns)}."
+            add(
+                "metadata",
+                f"Condition column '{config.condition_column}' was not found "
+                f"(default fallback 'treatment' also not found). Available columns: {', '.join(metadata_table.columns)}.",
             )
 
         requested = [config.batch_column, config.pair_column, *config.covariates]
         for column in [value for value in requested if value]:
             resolved = resolve_column_name(metadata_table.columns, column)
             if resolved not in metadata_table.columns:
-                errors.append(
-                    f"metadata: requested column '{column}' was not found. "
-                    f"Available columns: {', '.join(metadata_table.columns)}."
+                add(
+                    "metadata",
+                    f"Requested column '{column}' was not found. "
+                    f"Available columns: {', '.join(metadata_table.columns)}.",
                 )
 
     if config.manifest_path:
         manifest_table = load_manifest(config.manifest_path)
         resolved_manifest_sample = resolve_column_name(manifest_table.columns, config.manifest_sample_column)
         if resolved_manifest_sample not in manifest_table.columns:
-            errors.append(
-                f"manifest: sample-ID column '{config.manifest_sample_column}' was not found. "
-                f"Available columns: {', '.join(manifest_table.columns)}."
+            add(
+                "manifest",
+                f"Sample-ID column '{config.manifest_sample_column}' was not found. "
+                f"Available columns: {', '.join(manifest_table.columns)}.",
             )
 
         if config.manifest_path_column:
             resolved_path = resolve_column_name(manifest_table.columns, config.manifest_path_column)
             if resolved_path not in manifest_table.columns:
-                errors.append(
-                    f"manifest: path column '{config.manifest_path_column}' was not found. "
-                    f"Available columns: {', '.join(manifest_table.columns)}."
+                add(
+                    "manifest",
+                    f"Path column '{config.manifest_path_column}' was not found. "
+                    f"Available columns: {', '.join(manifest_table.columns)}.",
                 )
         elif config.check_manifest_paths:
             guessed = guess_manifest_path_column(manifest_table.columns)
             if guessed is None:
-                errors.append(
-                    "manifest: --check-paths requires a manifest path column. "
+                add(
+                    "manifest",
+                    "--check-paths requires a manifest path column. "
                     "Provide --manifest-path or include one of: file_path, filepath, path, file, fastq_path."
                 )
 
-    return errors
+    return grouped
+
+
+def collect_input_errors(config: StudyConfig) -> list[str]:
+    grouped = collect_input_error_groups(config)
+    flattened: list[str] = []
+    for group in _GROUP_ORDER:
+        for message in grouped.get(group, []):
+            flattened.append(f"{group}: {message}")
+    for group, messages in grouped.items():
+        if group in _GROUP_ORDER:
+            continue
+        for message in messages:
+            flattened.append(f"{group}: {message}")
+    return flattened
+
+
+def format_grouped_input_errors(grouped: dict[str, list[str]]) -> list[str]:
+    lines: list[str] = []
+    ordered_groups = [name for name in _GROUP_ORDER if name in grouped] + [
+        name for name in grouped if name not in _GROUP_ORDER
+    ]
+    for group in ordered_groups:
+        issues = grouped.get(group, [])
+        if not issues:
+            continue
+        lines.append(f"- {group}:")
+        for issue in issues:
+            lines.append(f"  - {issue}")
+        hint = _GROUP_HINTS.get(group)
+        if hint:
+            lines.append(f"  Hint: {hint}")
+    return lines

@@ -12,7 +12,11 @@ from typing import Optional, Sequence
 from expready import __version__
 from expready.loaders import detect_delimiter_mode, load_manifest, load_matrix, load_metadata
 from expready.models import StudyConfig, Table
-from expready.preflight import collect_input_errors, with_inferred_manifest_path_column
+from expready.preflight import (
+    collect_input_error_groups,
+    format_grouped_input_errors,
+    with_inferred_manifest_path_column,
+)
 from expready.validation import build_metadata_from_matrix, ensure_output_directory, run_validation
 from expready.reports import write_html_report
 
@@ -352,11 +356,11 @@ def run_validate(args: argparse.Namespace) -> int:
         print("Please provide --metadata or --matrix.")
         return 2
     config = with_inferred_manifest_path_column(config)
-    input_errors = collect_input_errors(config)
-    if input_errors:
+    input_error_groups = collect_input_error_groups(config)
+    if input_error_groups:
         print("Input error(s):")
-        for error in input_errors:
-            print(f"- {error}")
+        for line in format_grouped_input_errors(input_error_groups):
+            print(line)
         return 2
 
     print("Running Experiment-Readiness Checker...")
